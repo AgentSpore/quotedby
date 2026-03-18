@@ -17,18 +17,16 @@ OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
 # Model mapping: our name -> OpenRouter model ID
 MODEL_MAP = {
-    "chatgpt": "openai/gpt-4o-mini",
-    "perplexity": "perplexity/sonar",
-    "gemini": "google/gemini-2.0-flash-exp:free",
-    "claude": "anthropic/claude-3.5-haiku-20241022",
+    "chatgpt": "openai/gpt-4o-mini",          # $0.15/1M tokens
+    "perplexity": "perplexity/sonar",          # $1/1M tokens
+    "gemini": "google/gemini-2.0-flash-001",   # $0.10/1M tokens
 }
 
-# Free fallbacks if paid models fail
+# Fallbacks if primary model fails
 FREE_MODELS = {
-    "chatgpt": "minimax/minimax-m2.5:free",
-    "perplexity": "minimax/minimax-m2.5:free",
-    "gemini": "google/gemini-2.0-flash-exp:free",
-    "claude": "minimax/minimax-m2.5:free",
+    "chatgpt": "google/gemini-2.0-flash-001",
+    "perplexity": "openai/gpt-4o-mini",
+    "gemini": "openai/gpt-4o-mini",
 }
 
 
@@ -174,7 +172,7 @@ async def scan_project(
 ) -> list[dict]:
     """Scan all queries for a project across specified models."""
     if models is None:
-        models = ["chatgpt", "perplexity", "gemini", "claude"]
+        models = ["chatgpt", "perplexity", "gemini"]
 
     queries = project.get("queries", [])
     if not queries:

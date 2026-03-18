@@ -114,7 +114,7 @@ async def scan(project_id: int, body: ScanRequest | None = None):
     if not proj.get("queries"):
         raise HTTPException(422, "No queries defined. Add queries to the project first.")
 
-    models = [m.value for m in body.models] if body else ["chatgpt", "perplexity", "gemini", "claude"]
+    models = [m.value for m in body.models] if body else ["chatgpt", "perplexity", "gemini"]
     results = await scan_project(proj, models=models)
 
     # Save results

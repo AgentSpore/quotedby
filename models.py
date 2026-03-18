@@ -12,7 +12,6 @@ class AIModel(str, Enum):
     chatgpt = "chatgpt"
     perplexity = "perplexity"
     gemini = "gemini"
-    claude = "claude"
 
 
 class ProjectCreate(BaseModel):
@@ -82,7 +81,7 @@ class DashboardResponse(BaseModel):
 
 class ScanRequest(BaseModel):
     models: list[AIModel] = Field(
-        default=[AIModel.chatgpt, AIModel.perplexity, AIModel.gemini, AIModel.claude],
+        default=[AIModel.chatgpt, AIModel.perplexity, AIModel.gemini],
         description="Which AI models to scan"
     )
 
