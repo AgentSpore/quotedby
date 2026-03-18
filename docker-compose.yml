@@ -1,0 +1,18 @@
+services:
+  quotedby:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - data:/app/data
+    environment:
+      - DB_PATH=/app/data/quotedby.db
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+volumes:
+  data:

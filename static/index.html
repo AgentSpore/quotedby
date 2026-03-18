@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — AI Citation Checker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3350;--accent:#6366f1;--accent2:#818cf8;--text:#e2e8f0;--muted:#94a3b8;--green:#22c55e;--yellow:#eab308;--orange:#f97316;--red:#ef4444;--radius:12px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:0}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--surface);border-right:1px solid var(--border);padding:20px;flex-shrink:0;overflow-y:auto}
+.main{flex:1;padding:32px;overflow-y:auto;max-width:960px}
+.logo{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#6366f1,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.logo-sub{font-size:.75rem;color:var(--muted);margin-bottom:24px}
+.nav-item{display:block;width:100%;text-align:left;background:none;border:none;color:var(--muted);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:.9rem;margin-bottom:4px;transition:.2s}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.section{display:none}.section.active{display:block}
+h2{font-size:1.3rem;font-weight:700;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.card-value{font-size:1.6rem;font-weight:800;margin-top:4px}
+.card-value.green{color:var(--green)}.card-value.yellow{color:var(--yellow)}.card-value.red{color:var(--red)}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s}
+.btn:hover{background:var(--accent2)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+input,textarea,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:.9rem;width:100%;outline:none;transition:.2s}
+input:focus,textarea:focus{border-color:var(--accent)}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px}
+.form-row{display:flex;gap:12px;flex-wrap:wrap}
+.form-row>*{flex:1;min-width:200px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th{text-align:left;font-size:.75rem;color:var(--muted);text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:.88rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-yellow{background:rgba(234,179,8,.15);color:var(--yellow)}
+.progress{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s}
+.model-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0}
+.model-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+.model-name{font-size:.85rem;font-weight:600;margin-bottom:4px}
+.model-pct{font-size:1.4rem;font-weight:800}
+.rec-list{list-style:none;padding:0}.rec-list li{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:.88rem;color:var(--muted)}
+.rec-list li::before{content:"💡 ";margin-right:4px}
+.empty{text-align:center;padding:48px;color:var(--muted)}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);padding:12px 20px;border-radius:8px;color:var(--text);font-size:.88rem;z-index:999;display:none}
+.project-list .project-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.project-list .project-item:hover{border-color:var(--accent)}
+.project-list .project-item.selected{border-color:var(--accent);background:var(--surface2)}
+.scan-result{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.scan-query{font-weight:600;font-size:.9rem}.scan-model{font-size:.75rem;color:var(--muted)}
+.scan-context{font-size:.82rem;color:var(--muted);margin-top:4px;font-style:italic}
+.loader{display:none;text-align:center;padding:24px;color:var(--muted)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:700px){.layout{flex-direction:column}.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:12px;display:flex;gap:8px;overflow-x:auto}.nav-item{white-space:nowrap}.main{padding:16px}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="logo">QuotedBy</div>
+    <div class="logo-sub">AI Citation Checker</div>
+    <button class="nav-item active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="nav-item" onclick="showTab('projects')">Projects</button>
+    <button class="nav-item" onclick="showTab('scan')">Run Scan</button>
+    <button class="nav-item" onclick="showTab('results')">Results</button>
+    <button class="nav-item" onclick="showTab('new')">+ New Project</button>
+  </div>
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="section active">
+      <h2>Dashboard</h2>
+      <div id="dash-select" style="margin-bottom:16px">
+        <select id="dash-project" onchange="loadDashboard()"><option value="">Select project...</option></select>
+      </div>
+      <div id="dash-content" class="empty">Select a project to see visibility analytics</div>
+    </div>
+
+    <!-- Projects -->
+    <div id="tab-projects" class="section">
+      <h2>Projects</h2>
+      <div id="project-list" class="project-list"></div>
+    </div>
+
+    <!-- Scan -->
+    <div id="tab-scan" class="section">
+      <h2>Run Scan</h2>
+      <div class="form-group">
+        <label>Project</label>
+        <select id="scan-project"></select>
+      </div>
+      <div class="form-group">
+        <label>Models</label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label><input type="checkbox" value="chatgpt" checked> ChatGPT</label>
+          <label><input type="checkbox" value="perplexity" checked> Perplexity</label>
+          <label><input type="checkbox" value="gemini" checked> Gemini</label>
+          <label><input type="checkbox" value="claude" checked> Claude</label>
+        </div>
+      </div>
+      <button class="btn" id="scan-btn" onclick="runScan()">Start Scan</button>
+      <div class="loader" id="scan-loader"><div class="spinner"></div>Scanning AI models...</div>
+      <div id="scan-results" style="margin-top:16px"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="tab-results" class="section">
+      <h2>Scan Results</h2>
+      <div class="form-group">
+        <select id="results-project" onchange="loadResults()"><option value="">Select project...</option></select>
+      </div>
+      <div id="results-list"></div>
+    </div>
+
+    <!-- New Project -->
+    <div id="tab-new" class="section">
+      <h2>New Project</h2>
+      <div class="form-group"><label>Product Name</label><input id="new-name" placeholder="e.g. ReviewRay"></div>
+      <div class="form-group"><label>Category</label><input id="new-category" placeholder="e.g. fake review detector"></div>
+      <div class="form-group"><label>Website URL (optional)</label><input id="new-url" placeholder="https://..."></div>
+      <div class="form-group"><label>Competitors (comma separated)</label><input id="new-competitors" placeholder="e.g. Fakespot, ReviewMeta"></div>
+      <div class="form-group"><label>Queries (one per line, or leave empty for auto-generated)</label>
+        <textarea id="new-queries" rows="4" placeholder="What is the best fake review checker?&#10;Best tools to detect fake Amazon reviews"></textarea>
+      </div>
+      <button class="btn" onclick="createProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let projects = [];
+let currentProject = null;
+
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item')[['dashboard','projects','scan','results','new'].indexOf(name)].classList.add('active');
+  if (name === 'projects') loadProjects();
+  if (name === 'dashboard' || name === 'scan' || name === 'results') loadProjectSelects();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function visColor(pct) {
+  if (pct >= 60) return 'green';
+  if (pct >= 30) return 'yellow';
+  return 'red';
+}
+
+async function loadProjectSelects() {
+  try {
+    const r = await fetch('/projects');
+    projects = await r.json();
+    ['dash-project','scan-project','results-project'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const val = sel.value;
+      sel.innerHTML = '<option value="">Select project...</option>' +
+        projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      if (val) sel.value = val;
+    });
+  } catch(e) {}
+}
+
+async function loadProjects() {
+  await loadProjectSelects();
+  const list = document.getElementById('project-list');
+  if (!projects.length) {
+    list.innerHTML = '<div class="empty">No projects yet. Create one!</div>';
+    return;
+  }
+  list.innerHTML = projects.map(p => `
+    <div class="project-item" onclick="selectProject(${p.id})">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong>${p.name}</strong>
+          <div style="font-size:.8rem;color:var(--muted)">${p.category}</div>
+        </div>
+        <div style="text-align:right;font-size:.8rem;color:var(--muted)">
+          ${p.queries.length} queries · ${p.competitors.length} competitors
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectProject(id) {
+  document.getElementById('dash-project').value = id;
+  showTab('dashboard');
+  loadDashboard();
+}
+
+async function loadDashboard() {
+  const id = document.getElementById('dash-project').value;
+  if (!id) return;
+  const container = document.getElementById('dash-content');
+  container.innerHTML = '<div class="loader" style="display:block"><div class="spinner"></div>Loading...</div>';
+
+  try {
+    const r = await fetch(`/projects/${id}/dashboard`);
+    const d = await r.json();
+    const vc = visColor(d.mention_rate_pct);
+    container.innerHTML = `
+      <div class="cards">
+        <div class="card">
+          <div class="card-label">Visibility Score</div>
+          <div class="card-value ${vc}">${d.visibility_score}/100</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Mention Rate</div>
+          <div class="card-value ${vc}">${d.mention_rate_pct}%</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Total Checks</div>
+          <div class="card-value">${d.total_queries}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Mentions Found</div>
+          <div class="card-value">${d.total_mentions}</div>
+        </div>
+      </div>
+
+      <h3 style="margin:20px 0 8px">By Model</h3>
+      <div class="model-grid">
+        ${d.by_model.map(m => `
+          <div class="model-card">
+            <div class="model-name">${m.model}</div>
+            <div class="model-pct" style="color:var(--${visColor(m.visibility_pct)})">${m.visibility_pct}%</div>
+            <div style="font-size:.75rem;color:var(--muted)">${m.mentioned_count}/${m.total_queries} queries</div>
+            <div class="progress"><div class="progress-fill" style="width:${m.visibility_pct}%;background:var(--${visColor(m.visibility_pct)})"></div></div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${d.competitors.length ? `
+        <h3 style="margin:20px 0 8px">Competitors</h3>
+        <table>
+          <tr><th>Name</th><th>Mentions</th><th>Visibility</th></tr>
+          ${d.competitors.map(c => `
+            <tr>
+              <td>${c.name}</td>
+              <td>${c.mentioned_count}/${c.total_queries}</td>
+              <td><span class="badge badge-${visColor(c.visibility_pct)}">${c.visibility_pct}%</span></td>
+            </tr>
+          `).join('')}
+        </table>
+      ` : ''}
+
+      <h3 style="margin:20px 0 8px">Recommendations</h3>
+      <ul class="rec-list">
+        ${d.recommendations.map(r => `<li>${r}</li>`).join('')}
+      </ul>
+
+      ${d.recent_scans.length ? `
+        <h3 style="margin:20px 0 8px">Recent Scans</h3>
+        ${d.recent_scans.slice(0, 10).map(s => `
+          <div class="scan-result">
+            <div style="display:flex;justify-content:space-between">
+              <span class="scan-query">${s.query}</span>
+              <span class="badge ${s.mentioned ? 'badge-green' : 'badge-red'}">${s.mentioned ? 'Mentioned' : 'Not found'}</span>
+            </div>
+            <div class="scan-model">${s.model}${s.position ? ' · Position #' + s.position : ''}</div>
+            ${s.context ? `<div class="scan-context">"${s.context}"</div>` : ''}
+          </div>
+        `).join('')}
+      ` : ''}
+    `;
+  } catch(e) {
+    container.innerHTML = `<div class="empty">Error loading dashboard</div>`;
+  }
+}
+
+async function runScan() {
+  const id = document.getElementById('scan-project').value;
+  if (!id) { toast('Select a project first'); return; }
+
+  const models = [...document.querySelectorAll('#tab-scan input[type=checkbox]:checked')].map(c => c.value);
+  if (!models.length) { toast('Select at least one model'); return; }
+
+  document.getElementById('scan-btn').disabled = true;
+  document.getElementById('scan-loader').style.display = 'block';
+  document.getElementById('scan-results').innerHTML = '';
+
+  try {
+    const r = await fetch(`/projects/${id}/scan`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ models }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Scan failed');
+
+    document.getElementById('scan-results').innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="card-label">Queries</div><div class="card-value">${d.scanned_queries}</div></div>
+        <div class="card"><div class="card-label">Models</div><div class="card-value">${d.scanned_models}</div></div>
+        <div class="card"><div class="card-label">Mentions</div><div class="card-value ${visColor(d.mention_rate_pct)}">${d.mentions_found}</div></div>
+        <div class="card"><div class="card-label">Rate</div><div class="card-value ${visColor(d.mention_rate_pct)}">${d.mention_rate_pct}%</div></div>
+      </div>
+      ${d.results.map(s => `
+        <div class="scan-result">
+          <div style="display:flex;justify-content:space-between">
+            <span class="scan-query">${s.query}</span>
+            <span class="badge ${s.mentioned ? 'badge-green' : 'badge-red'}">${s.mentioned ? 'Mentioned' : 'Not found'}</span>
+          </div>
+          <div class="scan-model">${s.model}${s.position ? ' · #' + s.position : ''} ${s.competitors_mentioned.length ? '· Also: ' + s.competitors_mentioned.join(', ') : ''}</div>
+          ${s.context ? `<div class="scan-context">"${s.context}"</div>` : ''}
+        </div>
+      `).join('')}
+    `;
+    toast(`Scan complete: ${d.mentions_found}/${d.total_checks} mentions`);
+  } catch(e) {
+    document.getElementById('scan-results').innerHTML = `<div class="empty">${e.message}</div>`;
+  } finally {
+    document.getElementById('scan-btn').disabled = false;
+    document.getElementById('scan-loader').style.display = 'none';
+  }
+}
+
+async function loadResults() {
+  const id = document.getElementById('results-project').value;
+  if (!id) return;
+  const list = document.getElementById('results-list');
+  try {
+    const r = await fetch(`/projects/${id}/results?limit=100`);
+    const results = await r.json();
+    if (!results.length) { list.innerHTML = '<div class="empty">No results yet. Run a scan!</div>'; return; }
+    list.innerHTML = results.map(s => `
+      <div class="scan-result">
+        <div style="display:flex;justify-content:space-between">
+          <span class="scan-query">${s.query}</span>
+          <span class="badge ${s.mentioned ? 'badge-green' : 'badge-red'}">${s.mentioned ? 'Mentioned' : 'Not found'}</span>
+        </div>
+        <div class="scan-model">${s.model} · ${new Date(s.scanned_at).toLocaleString()}</div>
+        ${s.context ? `<div class="scan-context">"${s.context}"</div>` : ''}
+      </div>
+    `).join('');
+  } catch(e) { list.innerHTML = '<div class="empty">Error loading results</div>'; }
+}
+
+async function createProject() {
+  const name = document.getElementById('new-name').value.trim();
+  const category = document.getElementById('new-category').value.trim();
+  if (!name || !category) { toast('Name and category are required'); return; }
+
+  const url = document.getElementById('new-url').value.trim() || null;
+  const competitors = document.getElementById('new-competitors').value.split(',').map(s => s.trim()).filter(Boolean);
+  const queriesRaw = document.getElementById('new-queries').value.trim();
+  const queries = queriesRaw ? queriesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+  try {
+    const r = await fetch('/projects', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, category, url, competitors, queries }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Failed');
+    toast(`Project "${name}" created with ${d.queries.length} queries`);
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-category').value = '';
+    document.getElementById('new-url').value = '';
+    document.getElementById('new-competitors').value = '';
+    document.getElementById('new-queries').value = '';
+    showTab('dashboard');
+    setTimeout(() => { document.getElementById('dash-project').value = d.id; loadDashboard(); }, 300);
+  } catch(e) { toast(e.message); }
+}
+
+// Init
+loadProjectSelects();
+</script>
+</body>
+</html>
