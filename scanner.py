@@ -127,15 +127,17 @@ async def scan_query(
     """Scan a single query against a single model."""
     prompt = _build_prompt(query, product_name, category)
 
-    # Try primary model, then free fallback
+    import asyncio
+
+    # Try primary model, then free fallback (run blocking IO in thread)
     model_id = MODEL_MAP.get(model_name, MODEL_MAP["chatgpt"])
-    response_text = _call_openrouter(model_id, prompt)
+    response_text = await asyncio.to_thread(_call_openrouter, model_id, prompt)
 
     if response_text is None:
         # Try free fallback
         fallback_id = FREE_MODELS.get(model_name)
         if fallback_id:
-            response_text = _call_openrouter(fallback_id, prompt)
+            response_text = await asyncio.to_thread(_call_openrouter, fallback_id, prompt)
 
     if response_text is None:
         # No API key or all models failed — return empty result
@@ -170,7 +172,9 @@ async def scan_project(
     project: dict,
     models: list[str] | None = None,
 ) -> list[dict]:
-    """Scan all queries for a project across specified models."""
+    """Scan all queries for a project across specified models (parallel)."""
+    import asyncio
+
     if models is None:
         models = ["chatgpt", "perplexity", "gemini"]
 
@@ -178,19 +182,27 @@ async def scan_project(
     if not queries:
         return []
 
-    results = []
+    # Build all tasks and run in parallel
+    tasks = []
     for query in queries:
         for model_name in models:
-            result = await scan_query(
+            tasks.append(scan_query(
                 query=query,
                 model_name=model_name,
                 product_name=project["name"],
                 category=project["category"],
                 competitors=project.get("competitors", []),
-            )
-            results.append(result)
+            ))
 
-    return results
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    # Filter out exceptions
+    clean = []
+    for r in results:
+        if isinstance(r, Exception):
+            continue
+        clean.append(r)
+
+    return clean
 
 
 def generate_queries(product_name: str, category: str, count: int = 10) -> list[str]:
