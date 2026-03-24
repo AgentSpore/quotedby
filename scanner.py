@@ -17,16 +17,16 @@ OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
 # Model mapping: our name -> OpenRouter model ID
 MODEL_MAP = {
-    "chatgpt": "openai/gpt-4o-mini",          # $0.15/1M tokens
-    "perplexity": "perplexity/sonar",          # $1/1M tokens
-    "gemini": "google/gemini-2.0-flash-001",   # $0.10/1M tokens
+    "chatgpt": "google/gemini-2.0-flash-001",  # free
+    "perplexity": "google/gemini-2.0-flash-001",  # free
+    "gemini": "google/gemini-2.0-flash-001",    # free
 }
 
 # Fallbacks if primary model fails
 FREE_MODELS = {
     "chatgpt": "google/gemini-2.0-flash-001",
-    "perplexity": "openai/gpt-4o-mini",
-    "gemini": "openai/gpt-4o-mini",
+    "perplexity": "google/gemini-2.0-flash-001",
+    "gemini": "google/gemini-2.0-flash-001",
 }
 
 
