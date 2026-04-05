@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Notion-like</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #ffffff;
+    color: #37352f;
+    display: flex;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: #fbfbfa;
+    border-right: 1px solid #e8e5e0;
+    padding: 20px 16px;
+    min-height: 100vh;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    font-size: 15px;
+    font-weight: 700;
+    color: #37352f;
+    padding: 4px 8px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-logo .icon {
+    width: 22px;
+    height: 22px;
+    background: #37352f;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .sidebar-section {
+    margin-bottom: 20px;
+  }
+
+  .sidebar-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9b9a97;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+  }
+
+  .sidebar-item {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #37352f;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-item:hover { background: #ededec; }
+  .sidebar-item.active { background: #ededec; font-weight: 500; }
+
+  .sidebar-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-green { background: #4daa57; }
+  .dot-gray { background: #ccc; }
+
+  /* Main */
+  .main {
+    flex: 1;
+    padding: 48px 60px;
+    max-width: 900px;
+  }
+
+  .breadcrumb {
+    font-size: 13px;
+    color: #9b9a97;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: 40px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: #9b9a97;
+    margin-bottom: 40px;
+  }
+
+  /* Score */
+  .score-block {
+    margin-bottom: 40px;
+  }
+
+  .score-number {
+    font-size: 72px;
+    font-weight: 700;
+    color: #37352f;
+    line-height: 1;
+  }
+
+  .score-number span {
+    font-size: 32px;
+    color: #9b9a97;
+    font-weight: 400;
+  }
+
+  .score-meta {
+    font-size: 14px;
+    color: #9b9a97;
+    margin-top: 4px;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 36px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e8e5e0;
+  }
+
+  /* Models table */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9b9a97;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e8e5e0;
+  }
+
+  .table td {
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f0ef;
+    font-size: 15px;
+  }
+
+  .table tr:last-child td { border-bottom: none; }
+
+  .status-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .status-yes {
+    background: #e3f9e5;
+    color: #2b7a39;
+  }
+
+  .status-no {
+    background: #f1f0ef;
+    color: #9b9a97;
+  }
+
+  /* Competitors */
+  .comp-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .comp-item:last-child { margin-bottom: 0; }
+
+  .comp-name {
+    width: 140px;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .comp-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #f1f0ef;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .comp-bar-fill {
+    height: 100%;
+    background: #37352f;
+    border-radius: 3px;
+  }
+
+  .comp-bar-fill.you { background: #2383e2; }
+
+  .comp-pct {
+    width: 40px;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 600;
+    color: #9b9a97;
+  }
+
+  /* Callouts / Alerts */
+  .callout {
+    padding: 16px 16px 16px 20px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .callout:last-child { margin-bottom: 0; }
+
+  .callout-critical {
+    background: #fce4e4;
+    border-left: 3px solid #e03e3e;
+  }
+
+  .callout-warning {
+    background: #fdefd8;
+    border-left: 3px solid #d9730d;
+  }
+
+  .callout-label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .callout-critical .callout-label { color: #e03e3e; }
+  .callout-warning .callout-label { color: #d9730d; }
+
+  .toggle-hint {
+    font-size: 12px;
+    color: #c4c3c0;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 640px) {
+    body { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      min-height: auto;
+      border-right: none;
+      border-bottom: 1px solid #e8e5e0;
+      padding: 16px;
+    }
+    .main {
+      padding: 24px 20px;
+    }
+    .comp-name { width: 100px; }
+    h1 { font-size: 28px; }
+    .score-number { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">Q</div>
+      QuotedBy
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Projects</div>
+      <div class="sidebar-item active">
+        <div class="dot dot-green"></div>
+        PodMemory
+      </div>
+      <div class="sidebar-item">
+        <div class="dot dot-gray"></div>
+        SplitPost
+      </div>
+      <div class="sidebar-item">
+        <div class="dot dot-gray"></div>
+        DawnTask
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Views</div>
+      <div class="sidebar-item">Dashboard</div>
+      <div class="sidebar-item">Model Details</div>
+      <div class="sidebar-item">Alerts History</div>
+      <div class="sidebar-item">Settings</div>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="breadcrumb">QuotedBy / PodMemory / Dashboard</div>
+    <h1>PodMemory</h1>
+    <div class="subtitle">AI Citation Report &mdash; Last scanned Apr 1, 2026</div>
+
+    <div class="score-block">
+      <div class="score-number">42<span>%</span></div>
+      <div class="score-meta">Visibility Score &middot; Mentioned in 2 of 3 models</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Model Breakdown</div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Status</th>
+            <th>Position</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Qwen 3</td>
+            <td><span class="status-pill status-yes">Mentioned</span></td>
+            <td>#3</td>
+          </tr>
+          <tr>
+            <td>Gemini Flash</td>
+            <td><span class="status-pill status-no">Not mentioned</span></td>
+            <td>&mdash;</td>
+          </tr>
+          <tr>
+            <td>Nemotron</td>
+            <td><span class="status-pill status-yes">Mentioned</span></td>
+            <td>#7</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Competitors</div>
+      <div class="comp-item">
+        <div class="comp-name">Notion AI</div>
+        <div class="comp-bar-track"><div class="comp-bar-fill" style="width:65%"></div></div>
+        <div class="comp-pct">65%</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">PodMemory</div>
+        <div class="comp-bar-track"><div class="comp-bar-fill you" style="width:42%"></div></div>
+        <div class="comp-pct">42%</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-name">Mem.ai</div>
+        <div class="comp-bar-track"><div class="comp-bar-fill" style="width:38%"></div></div>
+        <div class="comp-pct">38%</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Defamation Alerts</div>
+      <div class="callout callout-critical">
+        <div class="callout-label">Critical</div>
+        "PodMemory was discontinued" &mdash; Qwen 3
+      </div>
+      <div class="callout callout-warning">
+        <div class="callout-label">Warning</div>
+        "PodMemory has privacy issues" &mdash; Nemotron
+      </div>
+    </div>
+  </main>
+</body>
+</html>

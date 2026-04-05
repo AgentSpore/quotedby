@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Dark Glass</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #121212;
+    color: #e4e4e7;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Grain texture overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Top Nav */
+  .topnav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .logo span {
+    color: #A855F7;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 24px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: #71717a;
+    text-decoration: none;
+    padding: 6px 0;
+  }
+
+  .nav-link.active {
+    color: #A855F7;
+    border-bottom: 2px solid #A855F7;
+  }
+
+  .project-chip {
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    color: #A855F7;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* Glass Card */
+  .glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .glass-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #A855F7;
+    margin-bottom: 20px;
+  }
+
+  /* Score circle */
+  .score-area {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .frosted-circle {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(168, 85, 247, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 2px solid rgba(168, 85, 247, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow:
+      0 0 40px rgba(168, 85, 247, 0.1),
+      inset 0 0 30px rgba(168, 85, 247, 0.05);
+  }
+
+  .frosted-circle .number {
+    font-size: 56px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .frosted-circle .label {
+    font-size: 14px;
+    color: #A855F7;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  .score-details {
+    flex: 1;
+  }
+
+  .score-details h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .score-details p {
+    font-size: 15px;
+    color: #71717a;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .score-stats {
+    display: flex;
+    gap: 24px;
+  }
+
+  .stat-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 20px;
+    font-weight: 700;
+    color: #A855F7;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #71717a;
+    margin-top: 2px;
+  }
+
+  /* Grid */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* Models */
+  .model-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .model-row:last-child { border-bottom: none; }
+
+  .model-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e4e4e7;
+  }
+
+  .model-pos {
+    font-size: 13px;
+    color: #52525b;
+    margin-top: 2px;
+  }
+
+  .pill {
+    padding: 4px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .pill-active {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.25);
+  }
+
+  .pill-inactive {
+    background: rgba(255,255,255,0.03);
+    color: #52525b;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Competitors */
+  .comp-item {
+    margin-bottom: 18px;
+  }
+
+  .comp-item:last-child { margin-bottom: 0; }
+
+  .comp-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  .comp-top .name { color: #a1a1aa; font-weight: 500; }
+  .comp-top .val { color: #A855F7; font-weight: 700; }
+
+  .comp-track {
+    height: 6px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .comp-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #7c3aed, #A855F7);
+  }
+
+  .comp-fill.you {
+    background: linear-gradient(90deg, #A855F7, #e879f9);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+  }
+
+  /* Alerts */
+  .alert-glass {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+
+  .alert-glass:last-child { margin-bottom: 0; }
+
+  .alert-glass.crit {
+    border-left: 3px solid #ef4444;
+    background: rgba(239, 68, 68, 0.04);
+  }
+
+  .alert-glass.warn {
+    border-left: 3px solid #f59e0b;
+    background: rgba(245, 158, 11, 0.04);
+  }
+
+  .alert-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+  }
+
+  .alert-glass.crit .alert-tag { color: #ef4444; }
+  .alert-glass.warn .alert-tag { color: #f59e0b; }
+
+  .alert-text {
+    font-size: 15px;
+    color: #a1a1aa;
+    line-height: 1.5;
+  }
+
+  .full-span { grid-column: span 2; }
+
+  @media (max-width: 640px) {
+    .grid-2, .full-span { grid-template-columns: 1fr; }
+    .full-span { grid-column: span 1; }
+    .score-area { flex-direction: column; text-align: center; }
+    .score-stats { justify-content: center; }
+    .frosted-circle { width: 140px; height: 140px; }
+    .frosted-circle .number { font-size: 42px; }
+    .nav-links { display: none; }
+    .topnav { flex-wrap: wrap; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <nav class="topnav">
+    <div class="logo">Quoted<span>By</span></div>
+    <div class="nav-links">
+      <a class="nav-link active" href="#">Dashboard</a>
+      <a class="nav-link" href="#">Models</a>
+      <a class="nav-link" href="#">History</a>
+      <a class="nav-link" href="#">Settings</a>
+    </div>
+    <div class="project-chip">PodMemory</div>
+  </nav>
+
+  <!-- Score -->
+  <div class="glass" style="margin-bottom:20px;">
+    <div class="score-area">
+      <div class="frosted-circle">
+        <div class="number">42%</div>
+        <div class="label">Visibility</div>
+      </div>
+      <div class="score-details">
+        <h2>PodMemory Visibility Report</h2>
+        <p>Your product is cited in 2 out of 3 AI models. Moderate visibility with room for growth. One critical defamation alert requires attention.</p>
+        <div class="score-stats">
+          <div class="stat-box">
+            <div class="stat-val">3</div>
+            <div class="stat-label">Models Scanned</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val">2</div>
+            <div class="stat-label">Citing You</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val">2</div>
+            <div class="stat-label">Active Alerts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Models -->
+    <div class="glass">
+      <div class="glass-title">Model Breakdown</div>
+      <div class="model-row">
+        <div>
+          <div class="model-name">Qwen 3</div>
+          <div class="model-pos">Position #3</div>
+        </div>
+        <div class="pill pill-active">Mentioned</div>
+      </div>
+      <div class="model-row">
+        <div>
+          <div class="model-name">Gemini Flash</div>
+          <div class="model-pos">Not found</div>
+        </div>
+        <div class="pill pill-inactive">Absent</div>
+      </div>
+      <div class="model-row">
+        <div>
+          <div class="model-name">Nemotron</div>
+          <div class="model-pos">Position #7</div>
+        </div>
+        <div class="pill pill-active">Mentioned</div>
+      </div>
+    </div>
+
+    <!-- Competitors -->
+    <div class="glass">
+      <div class="glass-title">Competitor Comparison</div>
+      <div class="comp-item">
+        <div class="comp-top"><span class="name">Notion AI</span><span class="val">65%</span></div>
+        <div class="comp-track"><div class="comp-fill" style="width:65%"></div></div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-top"><span class="name">PodMemory (you)</span><span class="val">42%</span></div>
+        <div class="comp-track"><div class="comp-fill you" style="width:42%"></div></div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-top"><span class="name">Mem.ai</span><span class="val">38%</span></div>
+        <div class="comp-track"><div class="comp-fill" style="width:38%"></div></div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="glass full-span">
+      <div class="glass-title">Defamation Alerts</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="alert-glass crit">
+          <div class="alert-tag">Critical</div>
+          <div class="alert-text">"PodMemory was discontinued" &mdash; detected in Qwen 3 model responses</div>
+        </div>
+        <div class="alert-glass warn">
+          <div class="alert-tag">Warning</div>
+          <div class="alert-text">"PodMemory has privacy issues" &mdash; detected in Nemotron model responses</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

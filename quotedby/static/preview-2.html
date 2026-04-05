@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Neon Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #0a0a0a;
+    color: #00F5FF;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Scanlines overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 245, 255, 0.015) 2px,
+      rgba(0, 245, 255, 0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #00F5FF;
+    margin-bottom: 24px;
+  }
+
+  .logo {
+    font-size: 24px;
+    font-weight: 700;
+    text-shadow: 0 0 10px #00F5FF, 0 0 40px rgba(0, 245, 255, 0.3);
+  }
+
+  .project-tag {
+    color: #FF2D7B;
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: 0 0 8px rgba(255, 45, 123, 0.5);
+  }
+
+  .hud-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2px;
+  }
+
+  .panel {
+    border: 1px solid rgba(0, 245, 255, 0.3);
+    border-radius: 0;
+    padding: 20px;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 8px; height: 8px;
+    border-top: 2px solid #00F5FF;
+    border-left: 2px solid #00F5FF;
+  }
+
+  .panel::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 8px; height: 8px;
+    border-bottom: 2px solid #00F5FF;
+    border-right: 2px solid #00F5FF;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #FF2D7B;
+    margin-bottom: 16px;
+    text-shadow: 0 0 6px rgba(255, 45, 123, 0.4);
+  }
+
+  /* ASCII Score */
+  .score-ascii {
+    font-size: 14px;
+    line-height: 1.2;
+    color: #00F5FF;
+    text-shadow: 0 0 6px rgba(0, 245, 255, 0.5);
+    white-space: pre;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .score-label {
+    text-align: center;
+    font-size: 13px;
+    color: rgba(0, 245, 255, 0.5);
+  }
+
+  /* Model list */
+  .model-entry {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 245, 255, 0.1);
+    font-size: 14px;
+  }
+
+  .model-entry:last-child { border-bottom: none; }
+
+  .model-name-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .tag-mentioned {
+    color: #0a0a0a;
+    background: #00F5FF;
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .tag-not {
+    color: #555;
+    border: 1px solid #555;
+    padding: 1px 8px;
+    font-size: 12px;
+  }
+
+  .model-pos {
+    color: rgba(0, 245, 255, 0.5);
+    font-size: 13px;
+  }
+
+  /* Competitors */
+  .comp-row {
+    margin-bottom: 14px;
+    font-size: 14px;
+  }
+
+  .comp-row:last-child { margin-bottom: 0; }
+
+  .comp-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .comp-header .pct {
+    color: #FF2D7B;
+    text-shadow: 0 0 6px rgba(255, 45, 123, 0.4);
+  }
+
+  .comp-bar-track {
+    height: 4px;
+    background: rgba(0, 245, 255, 0.1);
+  }
+
+  .comp-bar-fill {
+    height: 100%;
+    background: #00F5FF;
+    box-shadow: 0 0 8px rgba(0, 245, 255, 0.5);
+  }
+
+  .comp-bar-fill.you {
+    background: #FF2D7B;
+    box-shadow: 0 0 8px rgba(255, 45, 123, 0.5);
+  }
+
+  /* Alerts */
+  .alert-entry {
+    padding: 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .alert-entry:last-child { margin-bottom: 0; }
+
+  .alert-critical {
+    border-left: 3px solid #FF2D7B;
+    background: rgba(255, 45, 123, 0.05);
+  }
+
+  .alert-warning {
+    border-left: 3px solid #FFB800;
+    background: rgba(255, 184, 0, 0.05);
+  }
+
+  .alert-level {
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .alert-critical .alert-level { color: #FF2D7B; }
+  .alert-warning .alert-level { color: #FFB800; }
+
+  .alert-text {
+    color: rgba(0, 245, 255, 0.7);
+  }
+
+  .right-panels {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .status-line {
+    font-size: 12px;
+    color: rgba(0, 245, 255, 0.3);
+    text-align: center;
+    margin-top: 16px;
+    letter-spacing: 2px;
+  }
+
+  @media (max-width: 640px) {
+    .hud-grid {
+      grid-template-columns: 1fr;
+    }
+    .bottom-row {
+      grid-template-columns: 1fr;
+    }
+    .score-ascii { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">[QUOTED_BY]</div>
+    <div class="project-tag">[TARGET: PodMemory] [STATUS: SCANNING]</div>
+  </header>
+
+  <div class="hud-grid">
+    <div>
+      <div class="panel">
+        <div class="panel-title">[VISIBILITY INDEX]</div>
+        <div class="score-ascii">
+ ___  ___  ___ __
+/ _ \|_  ||_  )\ \
+\_, / / / / /  | |
+ /_/ /___/___| | |
+              /_/
+        </div>
+        <div class="score-label">// VISIBILITY_SCORE = 42%</div>
+        <div class="score-label" style="margin-top:8px;">// MODELS_SCANNED = 3</div>
+        <div class="score-label">// MENTIONED_IN = 2/3</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">[COMPETITORS]</div>
+        <div class="comp-row">
+          <div class="comp-header">
+            <span>Notion AI</span>
+            <span class="pct">65%</span>
+          </div>
+          <div class="comp-bar-track">
+            <div class="comp-bar-fill" style="width:65%"></div>
+          </div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-header">
+            <span>PodMemory</span>
+            <span class="pct">42%</span>
+          </div>
+          <div class="comp-bar-track">
+            <div class="comp-bar-fill you" style="width:42%"></div>
+          </div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-header">
+            <span>Mem.ai</span>
+            <span class="pct">38%</span>
+          </div>
+          <div class="comp-bar-track">
+            <div class="comp-bar-fill" style="width:38%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panels">
+      <div class="panel" style="flex:1;">
+        <div class="panel-title">[MODEL SCAN RESULTS]</div>
+        <div class="model-entry">
+          <div class="model-name-line">
+            <span>QWEN_3</span>
+            <span class="tag-mentioned">[MENTIONED]</span>
+          </div>
+          <div class="model-pos">&gt; position: #3 in response chain</div>
+        </div>
+        <div class="model-entry">
+          <div class="model-name-line">
+            <span>GEMINI_FLASH</span>
+            <span class="tag-not">[NULL]</span>
+          </div>
+          <div class="model-pos">&gt; not found in response output</div>
+        </div>
+        <div class="model-entry">
+          <div class="model-name-line">
+            <span>NEMOTRON</span>
+            <span class="tag-mentioned">[MENTIONED]</span>
+          </div>
+          <div class="model-pos">&gt; position: #7 in response chain</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">[DEFAMATION ALERTS]</div>
+        <div class="alert-entry alert-critical">
+          <div class="alert-level">[CRITICAL]</div>
+          <div class="alert-text">&gt; "PodMemory was discontinued" // src: QWEN_3</div>
+        </div>
+        <div class="alert-entry alert-warning">
+          <div class="alert-level">[WARNING]</div>
+          <div class="alert-text">&gt; "PodMemory has privacy issues" // src: NEMOTRON</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-line">SYS::QUOTEDBY v2.1.0 // LAST_SCAN: 2026-04-01T09:42:00Z // NEXT: T+3600s</div>
+</div>
+</body>
+</html>

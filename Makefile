@@ -4,14 +4,19 @@ install:
 	uv sync
 
 run:
-	uv run uvicorn main:app --host 0.0.0.0 --port 8000
+	uv run uvicorn quotedby.main:app --host 0.0.0.0 --port 8000
 
 dev:
-	uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+	uv run uvicorn quotedby.main:app --host 0.0.0.0 --port 8000 --reload
+
+test:
+	uv run pytest tests/ -v
 
 smoke:
 	@echo "=== Health ==="
 	curl -s http://localhost:8000/health | python3 -m json.tool
+	@echo "\n=== Models ==="
+	curl -s http://localhost:8000/models | python3 -m json.tool
 	@echo "\n=== Create project ==="
 	curl -s -X POST http://localhost:8000/projects \
 	  -H "Content-Type: application/json" \

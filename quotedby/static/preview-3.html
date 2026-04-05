@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Newspaper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #FFF8F0;
+    color: #1a1a1a;
+    padding: 32px 24px;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* Masthead */
+  .masthead {
+    text-align: center;
+    border-bottom: 4px double #1a1a1a;
+    padding-bottom: 16px;
+    margin-bottom: 8px;
+  }
+
+  .vol-line {
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .masthead h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .masthead-sub {
+    font-style: italic;
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+  }
+
+  .date-line {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    border-bottom: 1px solid #1a1a1a;
+    padding: 8px 0;
+    margin-bottom: 28px;
+    letter-spacing: 2px;
+  }
+
+  /* Top Section: Score + Models */
+  .top-section {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  .score-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+  }
+
+  .red-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 4px solid #c41e1e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .red-circle .number {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 52px;
+    font-weight: 900;
+    color: #c41e1e;
+    line-height: 1;
+  }
+
+  .red-circle .pct {
+    font-size: 18px;
+    color: #c41e1e;
+    font-style: italic;
+  }
+
+  .score-caption {
+    font-style: italic;
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+  }
+
+  .models-article h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+
+  .models-article .byline {
+    font-style: italic;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px dotted #ccc;
+  }
+
+  .model-item {
+    padding: 12px 0;
+    border-bottom: 1px dotted #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .model-item:last-child { border-bottom: none; }
+
+  .model-item .name {
+    font-weight: 600;
+    font-size: 17px;
+  }
+
+  .model-item .status-yes {
+    color: #c41e1e;
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  .model-item .status-no {
+    color: #aaa;
+    font-style: italic;
+  }
+
+  .model-item .pos {
+    font-size: 14px;
+    color: #666;
+  }
+
+  /* Bottom columns */
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    border-top: 2px solid #1a1a1a;
+    padding-top: 24px;
+  }
+
+  .column h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px dotted #ccc;
+  }
+
+  /* Competitors */
+  .comp-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dotted #ddd;
+    font-size: 16px;
+  }
+
+  .comp-entry:last-child { border-bottom: none; }
+
+  .comp-entry .value {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    color: #c41e1e;
+  }
+
+  .comp-entry.you .label {
+    font-weight: 600;
+  }
+
+  /* Alerts */
+  .alert-item {
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1px dotted #ccc;
+    position: relative;
+  }
+
+  .alert-item:last-child { margin-bottom: 0; }
+
+  .alert-stamp {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .alert-item.critical .alert-stamp {
+    color: #c41e1e;
+  }
+
+  .alert-item.warning .alert-stamp {
+    color: #b45309;
+  }
+
+  .alert-item .quote {
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #333;
+  }
+
+  .footer-line {
+    text-align: center;
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 4px double #1a1a1a;
+    font-size: 12px;
+    color: #aaa;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 640px) {
+    .top-section {
+      grid-template-columns: 1fr;
+    }
+    .columns {
+      grid-template-columns: 1fr;
+    }
+    .masthead h1 { font-size: 36px; }
+    .score-block { order: -1; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="masthead">
+    <div class="vol-line">Vol. 1 &mdash; AI Citation Report</div>
+    <h1>QuotedBy</h1>
+    <div class="masthead-sub">The Definitive Record of Your AI Visibility</div>
+  </div>
+  <div class="date-line">April 1, 2026 &mdash; Tuesday Edition &mdash; PodMemory Report</div>
+
+  <div class="top-section">
+    <div class="score-block">
+      <div class="red-circle">
+        <div class="number">42</div>
+        <div class="pct">percent</div>
+      </div>
+      <div class="score-caption">Overall Visibility Score<br>across 3 AI models</div>
+    </div>
+
+    <div class="models-article">
+      <h2>Three Models Scanned; Brand Found in Two</h2>
+      <div class="byline">By QuotedBy Automated Analysis Desk</div>
+
+      <div class="model-item">
+        <div>
+          <span class="name">Qwen 3</span>
+          <span class="pos"> &mdash; Position #3</span>
+        </div>
+        <span class="status-yes">Mentioned</span>
+      </div>
+      <div class="model-item">
+        <div>
+          <span class="name">Gemini Flash</span>
+          <span class="pos"> &mdash; Not found</span>
+        </div>
+        <span class="status-no">Not mentioned</span>
+      </div>
+      <div class="model-item">
+        <div>
+          <span class="name">Nemotron</span>
+          <span class="pos"> &mdash; Position #7</span>
+        </div>
+        <span class="status-yes">Mentioned</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="columns">
+    <div class="column">
+      <h3>Competitor Standing</h3>
+      <div class="comp-entry">
+        <span class="label">Notion AI</span>
+        <span class="value">65%</span>
+      </div>
+      <div class="comp-entry you">
+        <span class="label">PodMemory (You)</span>
+        <span class="value">42%</span>
+      </div>
+      <div class="comp-entry">
+        <span class="label">Mem.ai</span>
+        <span class="value">38%</span>
+      </div>
+    </div>
+
+    <div class="column">
+      <h3>Defamation Notices</h3>
+      <div class="alert-item critical">
+        <div class="alert-stamp">Critical Alert</div>
+        <div class="quote">"PodMemory was discontinued" &mdash; detected in Qwen 3 responses. Requires immediate correction request.</div>
+      </div>
+      <div class="alert-item warning">
+        <div class="alert-stamp">Warning</div>
+        <div class="quote">"PodMemory has privacy issues" &mdash; detected in Nemotron responses. Monitor for spread.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-line">QuotedBy &mdash; Protecting Your Brand in the Age of AI &mdash; quotedby.ai</div>
+</div>
+</body>
+</html>

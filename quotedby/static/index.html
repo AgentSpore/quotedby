@@ -1,0 +1,2670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — AI Citation Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   RESET & CSS CUSTOM PROPERTIES
+   ========================================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0A0A0A;
+  --bg2: #111111;
+  --card: #141414;
+  --text: #E0E0E0;
+  --muted: #666666;
+  --border: #222222;
+  --accent: #00F5FF;
+  --secondary: #FF2D7B;
+  --success: #00FF41;
+  --warning: #FFB000;
+  --danger: #FF453A;
+  --font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* =========================================================================
+   THEMES
+   ========================================================================= */
+[data-theme="cyan"] {
+  --accent: #00F5FF;
+  --secondary: #FF2D7B;
+}
+[data-theme="green"] {
+  --accent: #00FF41;
+  --secondary: #FFD700;
+}
+[data-theme="amber"] {
+  --accent: #FFB000;
+  --secondary: #FF4136;
+}
+[data-theme="purple"] {
+  --accent: #BF5AF2;
+  --secondary: #64D2FF;
+}
+[data-theme="red"] {
+  --accent: #FF453A;
+  --secondary: #30D158;
+}
+
+/* =========================================================================
+   BASE
+   ========================================================================= */
+html { font-size: 14px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 245, 255, 0.012) 2px,
+    rgba(0, 245, 255, 0.012) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+button { cursor: pointer; font-family: var(--font); }
+input, textarea, select { font-family: var(--font); }
+
+/* Focus-visible */
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* =========================================================================
+   ANIMATIONS
+   ========================================================================= */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scanlinePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.blink { animation: blink 1s step-end infinite; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* =========================================================================
+   LAYOUT
+   ========================================================================= */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================================================
+   SIDEBAR
+   ========================================================================= */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 200ms ease, width 200ms ease;
+  z-index: 100;
+}
+
+.sidebar-header {
+  padding: 20px 14px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent), 0 0 30px rgba(0, 245, 255, 0.2);
+  letter-spacing: 1px;
+}
+
+.sidebar-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-section-label {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 14px 14px 6px;
+}
+
+.project-list-sidebar {
+  padding: 0 8px 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.project-item-sidebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: all 150ms;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.project-item-sidebar:hover {
+  color: var(--text);
+  background: var(--bg2);
+}
+
+.project-item-sidebar.active {
+  color: var(--accent);
+}
+
+.project-item-sidebar .cursor-blink {
+  display: none;
+  color: var(--accent);
+  animation: blink 1s step-end infinite;
+}
+
+.project-item-sidebar.active .cursor-blink {
+  display: inline;
+}
+
+.project-item-sidebar .project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-new-project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 8px 12px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 150ms;
+  width: calc(100% - 16px);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.btn-new-project:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* =========================================================================
+   MAIN
+   ========================================================================= */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Topbar */
+.topbar {
+  height: 48px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  gap: 12px;
+  background: var(--bg);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.topbar-badge {
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hamburger {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 1.1rem;
+}
+
+.hamburger:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Theme switcher */
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.theme-dot {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 150ms;
+  position: relative;
+}
+
+.theme-dot:hover {
+  transform: scale(1.3);
+}
+
+.theme-dot.active {
+  border-color: #fff;
+  box-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
+
+.theme-dot.active::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: inherit;
+  opacity: 0.8;
+}
+
+.theme-dot[data-theme="cyan"]   { background: #00F5FF; }
+.theme-dot[data-theme="green"]  { background: #00FF41; }
+.theme-dot[data-theme="amber"]  { background: #FFB000; }
+.theme-dot[data-theme="purple"] { background: #BF5AF2; }
+.theme-dot[data-theme="red"]    { background: #FF453A; }
+
+/* =========================================================================
+   TABS
+   ========================================================================= */
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.tab-btn {
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 150ms;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-btn.tab-destructive {
+  color: var(--danger);
+}
+
+.tab-btn.tab-destructive.active {
+  color: var(--danger);
+  border-bottom-color: var(--danger);
+}
+
+/* =========================================================================
+   CONTENT
+   ========================================================================= */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* =========================================================================
+   BUTTONS
+   ========================================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  transition: all 150ms;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: none;
+  color: var(--text);
+}
+
+.btn-primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: none;
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary:disabled:hover {
+  background: none;
+  color: var(--accent);
+}
+
+.btn-outline {
+  border-color: var(--border);
+  color: var(--text);
+  background: none;
+}
+
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-destructive {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: none;
+}
+
+.btn-destructive:hover {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 6px 8px;
+}
+
+.btn-ghost:hover {
+  color: var(--accent);
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.71rem;
+}
+
+/* =========================================================================
+   METRIC CARDS
+   ========================================================================= */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 16px;
+  position: relative;
+  transition: border-color 200ms;
+}
+
+.metric-card:hover {
+  border-color: rgba(0, 245, 255, 0.3);
+}
+
+/* Corner brackets on metric cards */
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px; height: 6px;
+  border-top: 1px solid var(--accent);
+  border-left: 1px solid var(--accent);
+}
+
+.metric-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 6px; height: 6px;
+  border-bottom: 1px solid var(--accent);
+  border-right: 1px solid var(--accent);
+}
+
+.metric-label {
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+.metric-value.big {
+  font-size: 4rem;
+  text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(0, 245, 255, 0.15);
+}
+
+.metric-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.score-green { color: var(--success); text-shadow: 0 0 8px rgba(0, 255, 65, 0.3); }
+.score-amber { color: var(--warning); text-shadow: 0 0 8px rgba(255, 176, 0, 0.3); }
+.score-red   { color: var(--danger);  text-shadow: 0 0 8px rgba(255, 69, 58, 0.3); }
+
+/* =========================================================================
+   MODEL CARDS
+   ========================================================================= */
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.model-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 16px;
+  position: relative;
+}
+
+.model-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px; height: 6px;
+  border-top: 1px solid var(--accent);
+  border-left: 1px solid var(--accent);
+}
+
+.model-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.model-card-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.model-card-pct {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.model-card-detail {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.bar-track {
+  height: 3px;
+  background: var(--border);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 600ms ease;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* =========================================================================
+   COMPETITOR BARS (ASCII-style)
+   ========================================================================= */
+.competitor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.competitor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.competitor-name {
+  width: 130px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.competitor-bar-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.competitor-bar-track {
+  height: 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+
+.competitor-bar-fill {
+  height: 100%;
+  transition: width 600ms ease;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  position: relative;
+}
+
+.competitor-bar-fill span {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--bg);
+}
+
+/* =========================================================================
+   RECOMMENDATIONS
+   ========================================================================= */
+.rec-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--warning);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  transition: border-color 150ms;
+}
+
+.rec-card:hover {
+  border-color: var(--accent);
+  border-left-color: var(--warning);
+}
+
+.rec-icon {
+  color: var(--warning);
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+/* =========================================================================
+   SECTION HEADERS
+   ========================================================================= */
+.section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 6px rgba(255, 45, 123, 0.3);
+}
+
+/* =========================================================================
+   TABLE
+   ========================================================================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  border-bottom: 1px solid var(--accent);
+}
+
+th {
+  text-align: left;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--accent);
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+tr:hover td {
+  background: rgba(0, 245, 255, 0.02);
+}
+
+/* =========================================================================
+   BADGES
+   ========================================================================= */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-green {
+  border: 1px solid var(--success);
+  color: var(--success);
+  background: rgba(0, 255, 65, 0.08);
+}
+
+.badge-red {
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  background: rgba(255, 69, 58, 0.08);
+}
+
+.badge-amber {
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  background: rgba(255, 176, 0, 0.08);
+}
+
+.badge-purple {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: rgba(0, 245, 255, 0.08);
+}
+
+.badge-outline {
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: none;
+}
+
+/* Cited / Absent tags */
+.tag-cited {
+  color: var(--bg);
+  background: var(--accent);
+  padding: 1px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tag-absent {
+  color: var(--muted);
+  border: 1px solid var(--muted);
+  padding: 1px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================================
+   DEFAMATION CARDS
+   ========================================================================= */
+.defamation-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--border);
+  position: relative;
+  transition: border-color 150ms;
+}
+
+.defamation-card.severity-critical {
+  border-left-color: var(--danger);
+}
+
+.defamation-card.severity-critical::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 69, 58, 0.02) 3px,
+    rgba(255, 69, 58, 0.02) 6px
+  );
+  pointer-events: none;
+  animation: scanlinePulse 3s ease-in-out infinite;
+}
+
+.defamation-card.severity-warning {
+  border-left-color: var(--warning);
+}
+
+.defamation-card.severity-clean {
+  border-left-color: var(--success);
+}
+
+.defamation-card.severity-info {
+  border-left-color: var(--accent);
+}
+
+.defamation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.defamation-model {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.defamation-claim {
+  font-size: 0.78rem;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.5;
+  border-left: 2px solid var(--secondary);
+  padding-left: 10px;
+}
+
+.defamation-expand {
+  font-size: 0.71rem;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: var(--font);
+}
+
+.defamation-expand:hover {
+  color: var(--accent);
+}
+
+.defamation-expand .arrow {
+  transition: transform 150ms;
+  display: inline-block;
+}
+
+.defamation-expand.open .arrow {
+  transform: rotate(180deg);
+}
+
+.defamation-response {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.71rem;
+  color: var(--muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+}
+
+.defamation-response.open {
+  display: block;
+}
+
+.defamation-query {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+/* =========================================================================
+   FORMS
+   ========================================================================= */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 150ms;
+  font-family: var(--font);
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.form-input::placeholder {
+  color: rgba(102, 102, 102, 0.6);
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row > * {
+  flex: 1;
+}
+
+.form-hint {
+  font-size: 0.64rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* =========================================================================
+   EMPTY STATE
+   ========================================================================= */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 2rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 0.93rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.empty-state-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  max-width: 340px;
+}
+
+/* =========================================================================
+   LOADING
+   ========================================================================= */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 0;
+  animation: spin 700ms linear infinite;
+  margin-bottom: 12px;
+}
+
+.loading-text {
+  font-size: 0.78rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-text::after {
+  content: '...';
+  animation: blink 1s step-end infinite;
+}
+
+/* =========================================================================
+   TOAST
+   ========================================================================= */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  animation: slideIn 200ms ease;
+  max-width: 380px;
+}
+
+.toast-success {
+  border-left: 3px solid var(--success);
+}
+
+.toast-success .toast-icon {
+  color: var(--success);
+}
+
+.toast-error {
+  border-left: 3px solid var(--danger);
+}
+
+.toast-error .toast-icon {
+  color: var(--danger);
+}
+
+/* =========================================================================
+   MODAL
+   ========================================================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--accent);
+  padding: 24px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  transform: scale(0.95);
+  transition: transform 150ms;
+  position: relative;
+}
+
+/* Corner brackets on modal */
+.modal::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+
+.modal::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 12px; height: 12px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
+
+.modal-overlay.open .modal {
+  transform: scale(1);
+}
+
+.modal-title {
+  font-size: 0.93rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* =========================================================================
+   SCAN MODEL SELECTOR
+   ========================================================================= */
+.scan-model-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  cursor: pointer;
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--border);
+  transition: color 150ms;
+}
+
+.scan-model-item:last-child {
+  border-bottom: none;
+}
+
+.scan-model-item:hover {
+  color: var(--accent);
+}
+
+.scan-checkbox {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  width: 24px;
+}
+
+.scan-checkbox.unchecked {
+  color: var(--muted);
+}
+
+/* =========================================================================
+   CHART
+   ========================================================================= */
+.chart-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.chart-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px; height: 6px;
+  border-top: 1px solid var(--accent);
+  border-left: 1px solid var(--accent);
+}
+
+canvas {
+  width: 100% !important;
+  height: 200px !important;
+}
+
+/* =========================================================================
+   FILTER ROW
+   ========================================================================= */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 4px 12px;
+  font-size: 0.71rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  transition: all 150ms;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+/* =========================================================================
+   FOOTER BAR
+   ========================================================================= */
+.footer-bar {
+  height: 28px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  font-size: 0.61rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--bg);
+}
+
+.footer-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--success);
+  box-shadow: 0 0 4px var(--success);
+}
+
+/* =========================================================================
+   SCORE HERO
+   ========================================================================= */
+.score-hero {
+  text-align: center;
+  margin-bottom: 28px;
+  padding: 20px 0;
+  position: relative;
+}
+
+.score-hero-value {
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.score-hero-label {
+  font-size: 0.71rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* =========================================================================
+   RESPONSIVE
+   ========================================================================= */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    width: 240px;
+    z-index: 200;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .hamburger {
+    display: block;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .model-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .theme-switcher {
+    margin-right: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .content {
+    padding: 12px;
+  }
+
+  .score-hero-value {
+    font-size: 3.5rem;
+  }
+
+  .competitor-name {
+    width: 80px;
+    font-size: 0.71rem;
+  }
+}
+
+/* =========================================================================
+   SCAN EXPANDABLE ROWS
+   ========================================================================= */
+.scan-row { cursor: pointer; transition: background 0.15s; }
+.scan-row:hover { background: var(--bg2); }
+.scan-expand {
+    display: none;
+    padding: 12px 16px;
+    border: 1px solid var(--accent);
+    border-top: none;
+    background: var(--bg);
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.scan-expand.open { display: block; }
+.scan-expand .label { color: var(--accent); font-weight: 600; }
+
+/* =========================================================================
+   LOCALE SWITCHER
+   ========================================================================= */
+.locale-switch { display: flex; gap: 4px; margin-right: 12px; }
+.locale-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-family: var(--font); font-size: 10px; padding: 2px 6px; cursor: pointer;
+    text-transform: uppercase; transition: 0.15s;
+}
+.locale-btn:hover { border-color: var(--accent); color: var(--accent); }
+.locale-btn.active { border-color: var(--accent); color: var(--bg); background: var(--accent); }
+</style>
+</head>
+<body data-theme="cyan">
+
+<div class="app" id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">[QUOTED_BY]</div>
+      <div class="sidebar-sub" id="sidebar-sub">// AI Citation Checker</div>
+    </div>
+    <div class="sidebar-section-label" id="sidebar-projects-label">[PROJECTS]</div>
+    <div class="project-list-sidebar" id="sidebar-projects"></div>
+    <button class="btn-new-project" id="sidebar-new-btn" onclick="openNewProjectModal()">
+      + NEW
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()">&equiv;</button>
+        <span class="topbar-title" id="topbar-title">[QUOTED_BY]</span>
+        <span class="topbar-badge" id="topbar-badge" style="display:none"></span>
+      </div>
+      <div class="topbar-actions" id="topbar-actions">
+        <div class="locale-switch" id="locale-switch">
+          <button onclick="setLocale('en')" class="locale-btn active">EN</button>
+          <button onclick="setLocale('ru')" class="locale-btn">RU</button>
+          <button onclick="setLocale('cn')" class="locale-btn">CN</button>
+        </div>
+        <div class="theme-switcher" id="theme-switcher">
+          <div class="theme-dot active" data-theme="cyan" onclick="setTheme('cyan')" title="Cyan Matrix"></div>
+          <div class="theme-dot" data-theme="green" onclick="setTheme('green')" title="Green Hacker"></div>
+          <div class="theme-dot" data-theme="amber" onclick="setTheme('amber')" title="Amber Terminal"></div>
+          <div class="theme-dot" data-theme="purple" onclick="setTheme('purple')" title="Purple Void"></div>
+          <div class="theme-dot" data-theme="red" onclick="setTheme('red')" title="Red Alert"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs" id="tabs"></div>
+
+    <!-- Content -->
+    <div class="content" id="content">
+      <!-- Initial content replaced by render() -->
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-bar">
+      <div class="footer-status">
+        <div class="footer-dot"></div>
+        <span id="footer-status-text">SYS::ONLINE</span>
+      </div>
+      <span id="footer-info">QUOTED_BY v1.0.0</span>
+    </div>
+  </div>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="modal-new-project">
+  <div class="modal">
+    <div class="modal-title" id="np-modal-title">[NEW_PROJECT]</div>
+    <div class="form-group">
+      <label class="form-label" id="np-label-name">Product Name</label>
+      <input class="form-input" id="np-name" placeholder="e.g. ReviewRay">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="np-label-category">Category</label>
+      <input class="form-input" id="np-category" placeholder="e.g. fake review detector">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" id="np-label-url">Website URL</label>
+        <input class="form-input" id="np-url" placeholder="https://...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="np-label-competitors">Competitors</label>
+      <input class="form-input" id="np-competitors" placeholder="Fakespot, ReviewMeta">
+      <div class="form-hint">// comma separated</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="np-label-queries">Search Queries</label>
+      <textarea class="form-input" id="np-queries" rows="3" placeholder="One per line. Leave empty for auto-generated."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="np-cancel-btn" onclick="closeModal('modal-new-project')">[CANCEL]</button>
+      <button class="btn btn-primary" id="np-submit" onclick="createProject()">[CREATE]</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal-overlay" id="modal-edit-project">
+  <div class="modal">
+    <div class="modal-title" id="ep-modal-title">[PROJECT_SETTINGS]</div>
+    <div class="form-group">
+      <label class="form-label" id="ep-label-name">Product Name</label>
+      <input class="form-input" id="ep-name">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="ep-label-category">Category</label>
+      <input class="form-input" id="ep-category">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="ep-label-url">Website URL</label>
+      <input class="form-input" id="ep-url">
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="ep-label-competitors">Competitors</label>
+      <input class="form-input" id="ep-competitors">
+      <div class="form-hint">// comma separated</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="ep-label-queries">Search Queries</label>
+      <textarea class="form-input" id="ep-queries" rows="4"></textarea>
+      <div class="form-hint">// one per line</div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button class="btn btn-destructive btn-sm" id="ep-delete-btn" onclick="deleteCurrentProject()">[DELETE]</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" id="ep-cancel-btn" onclick="closeModal('modal-edit-project')">[CANCEL]</button>
+        <button class="btn btn-primary" id="ep-save-btn" onclick="saveProject()">[SAVE]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scan Model Selector Modal -->
+<div class="modal-overlay" id="modal-scan">
+  <div class="modal">
+    <div class="modal-title">[SELECT_AI_MODELS]</div>
+    <div style="font-size:0.71rem;color:var(--muted);margin-bottom:12px">// Choose which models to scan. Selection is saved per project.</div>
+    <div id="scan-model-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);padding:8px 12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="scan-cancel-btn" onclick="closeModal('modal-scan')">[CANCEL]</button>
+      <button class="btn btn-primary" id="scan-start-btn" onclick="startScan()">[START_SCAN]</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// =========================================================================
+// Theme
+// =========================================================================
+function setTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('qb_theme', theme);
+  // Update theme dots
+  document.querySelectorAll('.theme-dot').forEach(d => {
+    d.classList.toggle('active', d.getAttribute('data-theme') === theme);
+  });
+}
+
+// Restore theme from localStorage
+(function() {
+  const saved = localStorage.getItem('qb_theme');
+  if (saved) setTheme(saved);
+})();
+
+// =========================================================================
+// i18n
+// =========================================================================
+const i18n = {
+    en: {
+        dashboard: "DASHBOARD", scan_results: "SCAN_RESULTS", trends: "TRENDS",
+        defamation: "DEFAMATION", settings: "SETTINGS", scan: "SCAN",
+        projects: "PROJECTS", new_project: "+ NEW", visibility_score: "VISIBILITY_SCORE",
+        visibility: "VISIBILITY", mention_rate: "MENTION_RATE", total_scans: "TOTAL_SCANS",
+        avg_position: "AVG_POSITION", model_breakdown: "MODEL_BREAKDOWN",
+        competitor_analysis: "COMPETITOR_ANALYSIS", recommendations: "RECOMMENDATIONS",
+        defamation_monitor: "DEFAMATION_MONITOR", run_defamation: "RUN_DEFAMATION_CHECK",
+        select_models: "SELECT_AI_MODELS", start_scan: "START_SCAN", cancel: "CANCEL",
+        save: "SAVE", delete: "DELETE", cited: "CITED", absent: "ABSENT",
+        critical: "CRITICAL", warning: "WARNING", clean: "CLEAN",
+        no_scans: "No scan data yet", run_first: "Run your first scan to see how AI models perceive",
+        run_first_btn: "Run First Scan", no_defamation: "No defamation checks yet",
+        no_defamation_sub: "Run a defamation check to see if AI models spread false claims about your brand.",
+        full_response: "FULL_RESPONSE", context: "CONTEXT",
+        product_name: "Product Name", category: "Category", website_url: "Website URL",
+        competitors: "Competitors", search_queries: "Search Queries",
+        project_settings: "PROJECT_SETTINGS", new_project_title: "NEW_PROJECT",
+        scanning: "SCANNING...", sys_online: "SYS::ONLINE",
+        score_history: "SCORE_HISTORY", daily_data: "DAILY_DATA",
+        date: "DATE", vis_score: "VISIBILITY_SCORE", mention_rate_col: "MENTION_RATE",
+        query: "QUERY", model: "MODEL", status: "STATUS", position: "POSITION",
+        select_models_sub: "Choose which models to scan. Selection is saved per project.",
+        ai_citation_checker: "AI CITATION CHECKER",
+        no_scan_results: "NO SCAN RESULTS", no_scan_results_sub: "Run a scan to see detailed results per query and model.",
+        no_trend_data: "NO TREND DATA", no_trend_sub: "Run scans over multiple days to see visibility trends.",
+        visibility_over_time: "VISIBILITY_OVER_TIME",
+        welcome: "WELCOME TO QUOTED_BY", welcome_sub: "Create a project to start monitoring how AI models cite your brand.",
+        create_project: "CREATE PROJECT", create: "CREATE",
+        select_create: "Select or create a project to get started.",
+        run_check: "RUN_CHECK", checking: "CHECKING",
+        info: "INFO", no_projects: "no projects",
+    },
+    ru: {
+        dashboard: "ДАШБОРД", scan_results: "РЕЗУЛЬТАТЫ", trends: "ТРЕНДЫ",
+        defamation: "ДЕФАМАЦИЯ", settings: "НАСТРОЙКИ", scan: "СКАН",
+        projects: "ПРОЕКТЫ", new_project: "+ НОВЫЙ", visibility_score: "ИНДЕКС_ВИДИМОСТИ",
+        visibility: "ВИДИМОСТЬ", mention_rate: "ЧАСТОТА_УПОМИНАНИЙ", total_scans: "ВСЕГО_СКАНОВ",
+        avg_position: "СРЕДН_ПОЗИЦИЯ", model_breakdown: "РАЗБИВКА_ПО_МОДЕЛЯМ",
+        competitor_analysis: "АНАЛИЗ_КОНКУРЕНТОВ", recommendations: "РЕКОМЕНДАЦИИ",
+        defamation_monitor: "МОНИТОР_ДЕФАМАЦИИ", run_defamation: "ЗАПУСТИТЬ_ПРОВЕРКУ",
+        select_models: "ВЫБОР_ИИ_МОДЕЛЕЙ", start_scan: "НАЧАТЬ_СКАН", cancel: "ОТМЕНА",
+        save: "СОХРАНИТЬ", delete: "УДАЛИТЬ", cited: "УПОМЯНУТ", absent: "НЕТ",
+        critical: "КРИТИЧНО", warning: "ВНИМАНИЕ", clean: "ЧИСТО",
+        no_scans: "Данных сканирования пока нет", run_first: "Запустите первый скан чтобы увидеть как ИИ-модели воспринимают",
+        run_first_btn: "Запустить первый скан", no_defamation: "Проверок на дефамацию пока нет",
+        no_defamation_sub: "Запустите проверку чтобы узнать распространяют ли ИИ-модели ложную информацию о вашем бренде.",
+        full_response: "ПОЛНЫЙ_ОТВЕТ", context: "КОНТЕКСТ",
+        product_name: "Название продукта", category: "Категория", website_url: "URL сайта",
+        competitors: "Конкуренты", search_queries: "Поисковые запросы",
+        project_settings: "НАСТРОЙКИ_ПРОЕКТА", new_project_title: "НОВЫЙ_ПРОЕКТ",
+        scanning: "СКАНИРОВАНИЕ...", sys_online: "СИСТЕМА::ОНЛАЙН",
+        score_history: "ИСТОРИЯ_СКОРОВ", daily_data: "ДАННЫЕ_ПО_ДНЯМ",
+        date: "ДАТА", vis_score: "ИНДЕКС_ВИДИМОСТИ", mention_rate_col: "ЧАСТОТА",
+        query: "ЗАПРОС", model: "МОДЕЛЬ", status: "СТАТУС", position: "ПОЗИЦИЯ",
+        select_models_sub: "Выберите модели для сканирования. Выбор сохраняется для проекта.",
+        ai_citation_checker: "ПРОВЕРКА ЦИТИРОВАНИЯ ИИ",
+        no_scan_results: "НЕТ РЕЗУЛЬТАТОВ", no_scan_results_sub: "Запустите скан чтобы увидеть детали по запросам и моделям.",
+        no_trend_data: "НЕТ ДАННЫХ ТРЕНДОВ", no_trend_sub: "Запускайте сканы несколько дней чтобы увидеть тренды.",
+        visibility_over_time: "ВИДИМОСТЬ_ВО_ВРЕМЕНИ",
+        welcome: "ДОБРО ПОЖАЛОВАТЬ В QUOTED_BY", welcome_sub: "Создайте проект чтобы начать мониторинг цитирования ИИ-моделями.",
+        create_project: "СОЗДАТЬ ПРОЕКТ", create: "СОЗДАТЬ",
+        select_create: "Выберите или создайте проект для начала работы.",
+        run_check: "ЗАПУСТИТЬ_ПРОВЕРКУ", checking: "ПРОВЕРКА",
+        info: "ИНФО", no_projects: "нет проектов",
+    },
+    cn: {
+        dashboard: "仪表板", scan_results: "扫描结果", trends: "趋势",
+        defamation: "诽谤检测", settings: "设置", scan: "扫描",
+        projects: "项目", new_project: "+ 新建", visibility_score: "可见度指数",
+        visibility: "可见度", mention_rate: "提及率", total_scans: "总扫描",
+        avg_position: "平均位置", model_breakdown: "模型分析",
+        competitor_analysis: "竞争对手分析", recommendations: "建议",
+        defamation_monitor: "诽谤监控", run_defamation: "运行诽谤检查",
+        select_models: "选择AI模型", start_scan: "开始扫描", cancel: "取消",
+        save: "保存", delete: "删除", cited: "已提及", absent: "未提及",
+        critical: "严重", warning: "警告", clean: "正常",
+        no_scans: "暂无扫描数据", run_first: "运行首次扫描以了解AI模型如何看待",
+        run_first_btn: "运行首次扫描", no_defamation: "暂无诽谤检查",
+        no_defamation_sub: "运行诽谤检查以了解AI模型是否传播关于您品牌的虚假信息。",
+        full_response: "完整回复", context: "上下文",
+        product_name: "产品名称", category: "类别", website_url: "网站URL",
+        competitors: "竞争对手", search_queries: "搜索查询",
+        project_settings: "项目设置", new_project_title: "新建项目",
+        scanning: "扫描中...", sys_online: "系统::在线",
+        score_history: "分数历史", daily_data: "每日数据",
+        date: "日期", vis_score: "可见度", mention_rate_col: "提及率",
+        query: "查询", model: "模型", status: "状态", position: "位置",
+        select_models_sub: "选择要扫描的模型。选择将按项目保存。",
+        ai_citation_checker: "AI引用检查器",
+        no_scan_results: "暂无扫描结果", no_scan_results_sub: "运行扫描以查看每个查询和模型的详细结果。",
+        no_trend_data: "暂无趋势数据", no_trend_sub: "连续多天运行扫描以查看可见度趋势。",
+        visibility_over_time: "可见度趋势",
+        welcome: "欢迎使用 QUOTED_BY", welcome_sub: "创建项目以开始监控AI模型如何引用您的品牌。",
+        create_project: "创建项目", create: "创建",
+        select_create: "选择或创建项目以开始使用。",
+        run_check: "运行检查", checking: "检查中",
+        info: "信息", no_projects: "暂无项目",
+    }
+};
+
+let currentLocale = localStorage.getItem('qb_locale') || 'en';
+
+function t(key) {
+    return (i18n[currentLocale] && i18n[currentLocale][key]) || i18n.en[key] || key;
+}
+
+function setLocale(locale) {
+    currentLocale = locale;
+    localStorage.setItem('qb_locale', locale);
+    // Update locale buttons
+    document.querySelectorAll('.locale-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim().toLowerCase() === locale);
+    });
+    render();
+}
+
+// Restore locale from localStorage
+(function() {
+    const saved = localStorage.getItem('qb_locale');
+    if (saved) currentLocale = saved;
+})();
+
+// =========================================================================
+// State
+// =========================================================================
+const state = {
+  projects: [],
+  currentProject: null,
+  dashboard: null,
+  scans: [],
+  trends: [],
+  defamation: [],
+  activeTab: 'dashboard',
+  loading: false,
+  sidebarOpen: false,
+  scanFilter: 'all',
+  availableModels: [],
+  selectedModelIds: [],
+};
+
+// =========================================================================
+// API
+// =========================================================================
+const api = {
+  getProjects: () => fetch('/projects').then(r => r.json()),
+  createProject: (data) => fetch('/projects', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+  }).then(r => { if (!r.ok) throw r; return r.json(); }),
+  updateProject: (id, data) => fetch(`/projects/${id}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+  }).then(r => { if (!r.ok) throw r; return r.json(); }),
+  deleteProject: (id) => fetch(`/projects/${id}`, {method: 'DELETE'}).then(r => { if (!r.ok) throw r; return r.json(); }),
+  scanProject: (id, modelIds) => fetch(`/projects/${id}/scan`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({model_ids: modelIds})
+  }).then(r => { if (!r.ok) throw r; return r.json(); }),
+  getDashboard: (id) => fetch(`/projects/${id}/dashboard`).then(r => r.json()),
+  getResults: (id) => fetch(`/projects/${id}/results?limit=200`).then(r => r.json()),
+  getTrends: (id, days=30) => fetch(`/projects/${id}/trends?days=${days}`).then(r => r.json()),
+  getDefamation: (id) => fetch(`/projects/${id}/defamation?limit=100`).then(r => r.json()),
+  runDefamationCheck: (id) => fetch(`/projects/${id}/defamation-check`, {method:'POST'}).then(r => { if (!r.ok) throw r; return r.json(); }),
+  getModels: () => fetch('/models').then(r => r.json()),
+};
+
+// =========================================================================
+// Utilities
+// =========================================================================
+function scoreColor(v) {
+  if (v >= 60) return 'score-green';
+  if (v >= 30) return 'score-amber';
+  return 'score-red';
+}
+
+function scoreColorVar(v) {
+  if (v >= 60) return 'var(--success)';
+  if (v >= 30) return 'var(--warning)';
+  return 'var(--danger)';
+}
+
+function badgeClass(v) {
+  if (v >= 60) return 'badge-green';
+  if (v >= 30) return 'badge-amber';
+  return 'badge-red';
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type='success') {
+  const c = document.getElementById('toasts');
+  const icon = type === 'success' ? '&check;' : '!';
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span class="toast-icon">[${icon}]</span><span>${escapeHtml(msg)}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 200); }, 3500);
+}
+
+// =========================================================================
+// Sidebar
+// =========================================================================
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  state.sidebarOpen = !state.sidebarOpen;
+  sb.classList.toggle('open', state.sidebarOpen);
+}
+
+function renderSidebar() {
+  const c = document.getElementById('sidebar-projects');
+  document.getElementById('sidebar-projects-label').textContent = `[${t('projects')}]`;
+  document.getElementById('sidebar-new-btn').textContent = t('new_project');
+  document.getElementById('sidebar-sub').textContent = `// ${t('ai_citation_checker')}`;
+  if (!state.projects.length) {
+    c.innerHTML = `<div style="padding:8px 10px;font-size:0.71rem;color:var(--muted)">// ${t('no_projects')}</div>`;
+    return;
+  }
+  c.innerHTML = state.projects.map(p => `
+    <button class="project-item-sidebar ${state.currentProject && state.currentProject.id === p.id ? 'active' : ''}"
+      onclick="selectProject(${p.id})">
+      <span>&gt;</span>
+      <span class="project-name">${escapeHtml(p.name)}</span>
+      <span class="cursor-blink">_</span>
+    </button>
+  `).join('');
+}
+
+async function selectProject(id) {
+  const p = state.projects.find(x => x.id === id);
+  if (!p) return;
+  state.currentProject = p;
+  state.activeTab = 'dashboard';
+  renderSidebar();
+  renderTopbar();
+  renderTabs();
+  await loadTab('dashboard');
+  // close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+  state.sidebarOpen = false;
+}
+
+// =========================================================================
+// Topbar
+// =========================================================================
+function renderTopbar() {
+  const title = document.getElementById('topbar-title');
+  const badge = document.getElementById('topbar-badge');
+  const actions = document.getElementById('topbar-actions');
+
+  const curTheme = document.body.getAttribute('data-theme') || 'cyan';
+
+  // Locale switcher + theme switcher
+  const localeSwitcherHtml = `
+    <div class="locale-switch" id="locale-switch">
+      <button onclick="setLocale('en')" class="locale-btn ${currentLocale === 'en' ? 'active' : ''}">EN</button>
+      <button onclick="setLocale('ru')" class="locale-btn ${currentLocale === 'ru' ? 'active' : ''}">RU</button>
+      <button onclick="setLocale('cn')" class="locale-btn ${currentLocale === 'cn' ? 'active' : ''}">CN</button>
+    </div>
+  `;
+
+  const themeSwitcherHtml = `
+    <div class="theme-switcher" id="theme-switcher">
+      <div class="theme-dot ${curTheme === 'cyan' ? 'active' : ''}" data-theme="cyan" onclick="setTheme('cyan')" title="Cyan Matrix"></div>
+      <div class="theme-dot ${curTheme === 'green' ? 'active' : ''}" data-theme="green" onclick="setTheme('green')" title="Green Hacker"></div>
+      <div class="theme-dot ${curTheme === 'amber' ? 'active' : ''}" data-theme="amber" onclick="setTheme('amber')" title="Amber Terminal"></div>
+      <div class="theme-dot ${curTheme === 'purple' ? 'active' : ''}" data-theme="purple" onclick="setTheme('purple')" title="Purple Void"></div>
+      <div class="theme-dot ${curTheme === 'red' ? 'active' : ''}" data-theme="red" onclick="setTheme('red')" title="Red Alert"></div>
+    </div>
+  `;
+
+  // Footer status
+  document.getElementById('footer-status-text').textContent = t('sys_online');
+
+  if (state.currentProject) {
+    title.textContent = state.currentProject.name.toUpperCase();
+    badge.textContent = state.currentProject.category.toUpperCase();
+    badge.style.display = 'inline';
+    actions.innerHTML = `
+      ${localeSwitcherHtml}
+      ${themeSwitcherHtml}
+      <button class="btn btn-outline btn-sm" onclick="openEditProjectModal()">[${t('settings')}]</button>
+      <button class="btn btn-primary btn-sm" id="scan-btn" onclick="runScan()">[${t('scan')}]</button>
+    `;
+  } else {
+    title.textContent = '[QUOTED_BY]';
+    badge.style.display = 'none';
+    actions.innerHTML = localeSwitcherHtml + themeSwitcherHtml;
+  }
+}
+
+// =========================================================================
+// Tabs
+// =========================================================================
+function renderTabs() {
+  const c = document.getElementById('tabs');
+  if (!state.currentProject) { c.innerHTML = ''; return; }
+  const tabs = [
+    {id:'dashboard', label:`[${t('dashboard')}]`},
+    {id:'scans', label:`[${t('scan_results')}]`},
+    {id:'trends', label:`[${t('trends')}]`},
+    {id:'defamation', label:`[${t('defamation')}]`, destructive:true},
+  ];
+  c.innerHTML = tabs.map(tb => `
+    <button class="tab-btn ${state.activeTab === tb.id ? 'active' : ''} ${tb.destructive ? 'tab-destructive' : ''}"
+      onclick="switchTab('${tb.id}')">
+      ${tb.label}
+    </button>
+  `).join('');
+}
+
+async function switchTab(tab) {
+  state.activeTab = tab;
+  renderTabs();
+  await loadTab(tab);
+}
+
+async function loadTab(tab) {
+  const content = document.getElementById('content');
+  if (!state.currentProject) return;
+  const pid = state.currentProject.id;
+
+  content.innerHTML = `<div class="loading"><div class="spinner"></div><div class="loading-text">${t('scanning')}</div></div>`;
+
+  try {
+    switch(tab) {
+      case 'dashboard':
+        state.dashboard = await api.getDashboard(pid);
+        renderDashboard();
+        break;
+      case 'scans':
+        state.scans = await api.getResults(pid);
+        renderScans();
+        break;
+      case 'trends':
+        state.trends = await api.getTrends(pid);
+        renderTrends();
+        break;
+      case 'defamation':
+        state.defamation = await api.getDefamation(pid);
+        renderDefamation();
+        break;
+    }
+  } catch(e) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">[!]</div><div class="empty-state-title">[ERROR] FAILED TO LOAD</div><div class="empty-state-desc">${escapeHtml(e.message || 'Unknown error')}</div></div>`;
+  }
+}
+
+// =========================================================================
+// Dashboard
+// =========================================================================
+function renderDashboard() {
+  const d = state.dashboard;
+  const c = document.getElementById('content');
+  if (!d) return;
+
+  const sc = scoreColor(d.visibility_score);
+  const hasData = d.total_queries > 0;
+
+  if (!hasData) {
+    c.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&gt;_</div>
+        <div class="empty-state-title">[${t('no_scans').toUpperCase()}]</div>
+        <div class="empty-state-desc">${t('run_first')} "${escapeHtml(state.currentProject.name)}".</div>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="runScan()">[${t('run_first_btn').toUpperCase()}]</button>
+      </div>
+    `;
+    return;
+  }
+
+  const avgPos = d.by_model.reduce((sum, m) => sum + (m.avg_position || 0), 0);
+  const avgPosCount = d.by_model.filter(m => m.avg_position).length;
+  const avgPosStr = avgPosCount ? (avgPos / avgPosCount).toFixed(1) : '-';
+
+  // Generate ASCII-style competitor bars
+  function asciiBar(pct) {
+    const filled = Math.round(pct / 5);
+    const empty = 20 - filled;
+    return '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
+  }
+
+  c.innerHTML = `
+    <!-- Score hero -->
+    <div class="score-hero">
+      <div class="score-hero-value ${sc}">${d.visibility_score}</div>
+      <div class="score-hero-label">// ${t('visibility_score').toLowerCase()}</div>
+    </div>
+
+    <!-- Metric cards -->
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-label">[${t('visibility')}]</div>
+        <div class="metric-value ${sc}">${d.visibility_score}<span style="font-size:0.71rem;opacity:0.4">/100</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">[${t('mention_rate')}]</div>
+        <div class="metric-value ${sc}">${d.mention_rate_pct}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">[${t('total_scans')}]</div>
+        <div class="metric-value">${d.total_queries}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">[${t('avg_position')}]</div>
+        <div class="metric-value">#${avgPosStr}</div>
+      </div>
+    </div>
+
+    <!-- Model breakdown -->
+    <div class="section-title">[${t('model_breakdown')}]</div>
+    <div class="model-grid">
+      ${d.by_model.map(m => {
+        const msc = scoreColor(m.visibility_pct);
+        const status = m.visibility_pct > 0 ? `<span class="tag-cited">[${t('cited')}]</span>` : `<span class="tag-absent">[${t('absent')}]</span>`;
+        return `
+          <div class="model-card">
+            <div class="model-card-header">
+              <span class="model-card-name">[${escapeHtml(m.model).toUpperCase()}]</span>
+            </div>
+            <div class="model-card-pct ${msc}">${m.visibility_pct}%</div>
+            <div class="model-card-detail">${m.mentioned_count} / ${m.total_queries} queries ${status}</div>
+            ${m.avg_position ? `<div class="model-card-detail">// avg_position: #${m.avg_position}</div>` : ''}
+            <div class="bar-track"><div class="bar-fill" style="width:${m.visibility_pct}%;background:${scoreColorVar(m.visibility_pct)}"></div></div>
+          </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Competitor comparison -->
+    ${d.competitors.length ? `
+      <div class="section-title">[${t('competitor_analysis')}]</div>
+      <div class="competitor-list">
+        <div class="competitor-row">
+          <div class="competitor-name" style="font-weight:700;color:var(--accent)">${escapeHtml(state.currentProject.name)}</div>
+          <div class="competitor-bar-wrap">
+            <div class="competitor-bar-track">
+              <div class="competitor-bar-fill" style="width:${d.mention_rate_pct}%;background:var(--accent)">
+                <span>${d.mention_rate_pct}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        ${d.competitors.map(comp => `
+          <div class="competitor-row">
+            <div class="competitor-name">${escapeHtml(comp.name)}</div>
+            <div class="competitor-bar-wrap">
+              <div class="competitor-bar-track">
+                <div class="competitor-bar-fill" style="width:${comp.visibility_pct}%;background:var(--muted)">
+                  <span>${comp.visibility_pct}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <!-- Recommendations -->
+    ${d.recommendations.length ? `
+      <div class="section-title">[${t('recommendations')}]</div>
+      ${d.recommendations.map(r => `
+        <div class="rec-card">
+          <span class="rec-icon">&gt;</span>
+          <span>${escapeHtml(r)}</span>
+        </div>
+      `).join('')}
+    ` : ''}
+  `;
+
+  // Update footer
+  document.getElementById('footer-info').textContent =
+    `QUOTED_BY v1.0.0 | SCANS: ${d.total_queries} | MODELS: ${d.by_model.length}`;
+}
+
+// =========================================================================
+// Scan Results
+// =========================================================================
+function renderScans() {
+  const c = document.getElementById('content');
+  if (!state.scans.length) {
+    c.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&gt;_</div>
+        <div class="empty-state-title">[${t('no_scan_results')}]</div>
+        <div class="empty-state-desc">${t('no_scan_results_sub')}</div>
+      </div>`;
+    return;
+  }
+
+  const models = [...new Set(state.scans.map(s => s.model))];
+  const filtered = state.scanFilter === 'all' ? state.scans : state.scans.filter(s => s.model === state.scanFilter);
+  const lastDate = state.scans[0]?.scanned_at;
+
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:0.71rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">
+        ${state.scans.length} results ${lastDate ? '// last_scan: ' + new Date(lastDate).toLocaleDateString() : ''}
+      </div>
+      <div class="filter-row" style="margin-bottom:0">
+        <button class="filter-chip ${state.scanFilter === 'all' ? 'active' : ''}" onclick="filterScans('all')">ALL</button>
+        ${models.map(m => `
+          <button class="filter-chip ${state.scanFilter === m ? 'active' : ''}" onclick="filterScans('${m}')">${escapeHtml(m).toUpperCase()}</button>
+        `).join('')}
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>${t('query')}</th><th>${t('model')}</th><th>${t('status')}</th><th>${t('position')}</th><th>${t('context')}</th></tr>
+      </thead>
+      <tbody>
+        ${filtered.map((s, idx) => `
+          <tr class="scan-row" onclick="toggleScanExpand(${idx})">
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(s.query)}">${escapeHtml(s.query)}</td>
+            <td style="text-transform:uppercase">${escapeHtml(s.model)}</td>
+            <td>${s.mentioned
+              ? `<span class="tag-cited">[${t('cited')}]</span>`
+              : `<span class="tag-absent">[${t('absent')}]</span>`}</td>
+            <td>${s.position ? '#' + s.position : '-'}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.71rem;color:var(--muted)"
+              title="${escapeHtml(s.context || '')}">${escapeHtml(s.context || '-')}</td>
+          </tr>
+          <tr><td colspan="5" style="padding:0;border:none">
+            <div class="scan-expand" id="scan-expand-${idx}">
+              <span class="label">[${t('full_response')}]</span>\n${escapeHtml(s.response_text || '-')}${s.context ? `\n\n<span class="label">[${t('context')}]</span>: ${escapeHtml(s.context)}` : ''}
+            </div>
+          </td></tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function toggleScanExpand(idx) {
+  const el = document.getElementById('scan-expand-' + idx);
+  if (el) el.classList.toggle('open');
+}
+
+function filterScans(model) {
+  state.scanFilter = model;
+  renderScans();
+}
+
+// =========================================================================
+// Trends
+// =========================================================================
+function renderTrends() {
+  const c = document.getElementById('content');
+  if (!state.trends.length) {
+    c.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&gt;_</div>
+        <div class="empty-state-title">[${t('no_trend_data')}]</div>
+        <div class="empty-state-desc">${t('no_trend_sub')}</div>
+      </div>`;
+    return;
+  }
+
+  c.innerHTML = `
+    <div class="section-title">[${t('visibility_over_time')}]</div>
+    <div class="chart-container">
+      <canvas id="trend-chart"></canvas>
+    </div>
+    <div class="section-title">[${t('daily_data')}]</div>
+    <table>
+      <thead><tr><th>${t('date')}</th><th>${t('vis_score')}</th><th>${t('mention_rate_col')}</th></tr></thead>
+      <tbody>
+        ${state.trends.map(tr => `
+          <tr>
+            <td>${tr.date}</td>
+            <td><span class="badge ${badgeClass(tr.visibility_score)}">${tr.visibility_score}</span></td>
+            <td>${tr.mention_rate_pct}%</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  // Draw chart
+  requestAnimationFrame(() => drawTrendChart());
+}
+
+function drawTrendChart() {
+  const canvas = document.getElementById('trend-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 200 * dpr;
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = 200;
+  const pad = {top:20, right:16, bottom:30, left:40};
+  const data = [...state.trends].reverse();
+  if (!data.length) return;
+
+  const maxVal = Math.max(100, ...data.map(d => d.visibility_score));
+  const xStep = data.length > 1 ? (W - pad.left - pad.right) / (data.length - 1) : 0;
+
+  // Get computed accent color
+  const accentColor = getComputedStyle(document.body).getPropertyValue('--accent').trim();
+
+  // Grid lines
+  ctx.strokeStyle = '#222222';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (H - pad.top - pad.bottom) * (1 - i/4);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#666666';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal * i / 4), pad.left - 6, y + 3);
+  }
+
+  // X labels
+  ctx.fillStyle = '#666666';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'center';
+  const labelStep = Math.max(1, Math.floor(data.length / 6));
+  data.forEach((d, i) => {
+    if (i % labelStep === 0 || i === data.length - 1) {
+      const x = pad.left + i * xStep;
+      const parts = d.date.split('-');
+      ctx.fillText(parts[1]+'/'+parts[2], x, H - pad.bottom + 16);
+    }
+  });
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  data.forEach((d, i) => {
+    const x = pad.left + i * xStep;
+    const y = pad.top + (H - pad.top - pad.bottom) * (1 - d.visibility_score / maxVal);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+  // Parse hex to rgba
+  const hexToRgb = (hex) => {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return {r, g, b};
+  };
+  const rgb = hexToRgb(accentColor || '#00F5FF');
+  grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.15)`);
+  grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+  ctx.lineTo(pad.left + (data.length-1)*xStep, H - pad.bottom);
+  ctx.lineTo(pad.left, H - pad.bottom);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Dots
+  data.forEach((d, i) => {
+    const x = pad.left + i * xStep;
+    const y = pad.top + (H - pad.top - pad.bottom) * (1 - d.visibility_score / maxVal);
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI*2);
+    ctx.fillStyle = accentColor;
+    ctx.fill();
+    ctx.strokeStyle = '#0A0A0A';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+// =========================================================================
+// Defamation
+// =========================================================================
+function renderDefamation() {
+  const c = document.getElementById('content');
+  const results = state.defamation;
+
+  const critCount = results.filter(r => r.severity === 'critical').length;
+  const warnCount = results.filter(r => r.severity === 'warning').length;
+  const cleanCount = results.filter(r => r.severity === 'clean').length;
+
+  c.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div class="section-title" style="margin-bottom:0">[${t('defamation_monitor')}]</div>
+      <button class="btn btn-destructive btn-sm" id="defamation-btn" onclick="runDefamationCheck()">[${t('run_check')}]</button>
+    </div>
+
+    ${results.length ? `
+      <div class="metric-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+        <div class="metric-card" style="border-left:3px solid var(--danger)">
+          <div class="metric-label">[${t('critical')}]</div>
+          <div class="metric-value score-red">${critCount}</div>
+        </div>
+        <div class="metric-card" style="border-left:3px solid var(--warning)">
+          <div class="metric-label">[${t('warning')}]</div>
+          <div class="metric-value score-amber">${warnCount}</div>
+        </div>
+        <div class="metric-card" style="border-left:3px solid var(--success)">
+          <div class="metric-label">[${t('clean')}]</div>
+          <div class="metric-value score-green">${cleanCount}</div>
+        </div>
+      </div>
+
+      ${results.map((r, idx) => {
+        const sev = r.severity || 'info';
+        const sevLabel = sev === 'critical' ? t('critical') : sev === 'warning' ? t('warning') : sev === 'clean' ? t('clean') : t('info');
+        const sevBadge = sev === 'critical' ? 'badge-red' : sev === 'warning' ? 'badge-amber' : sev === 'clean' ? 'badge-green' : 'badge-purple';
+        const typeBadge = r.type && r.type !== 'clean' ? `<span class="badge badge-outline">${escapeHtml(r.type.replace(/_/g,' ')).toUpperCase()}</span>` : '';
+        return `
+          <div class="defamation-card severity-${sev}">
+            <div class="defamation-header">
+              <div class="defamation-model">
+                [${escapeHtml(r.model).toUpperCase()}]
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                ${typeBadge}
+                <span class="badge ${sevBadge}">[${sevLabel}]</span>
+              </div>
+            </div>
+            <div class="defamation-query">// ${escapeHtml(r.query)}</div>
+            ${r.claim ? `<div class="defamation-claim">"${escapeHtml(r.claim)}"</div>` : ''}
+            <button class="defamation-expand" onclick="toggleDefResponse(${idx})">
+              <span class="arrow">&#9660;</span> ${t('full_response')}
+            </button>
+            <div class="defamation-response" id="def-resp-${idx}">${escapeHtml(r.response_text)}</div>
+          </div>`;
+      }).join('')}
+    ` : `
+      <div class="empty-state">
+        <div class="empty-icon">[OK]</div>
+        <div class="empty-state-title">[${t('no_defamation').toUpperCase()}]</div>
+        <div class="empty-state-desc">${t('no_defamation_sub')}</div>
+      </div>
+    `}
+  `;
+}
+
+function toggleDefResponse(idx) {
+  const resp = document.getElementById('def-resp-' + idx);
+  const btn = resp.previousElementSibling;
+  resp.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
+async function runDefamationCheck() {
+  if (!state.currentProject) return;
+  const btn = document.getElementById('defamation-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = `<div class="spinner" style="width:14px;height:14px;margin:0;border-width:2px;display:inline-block"></div> ${t('checking')}`; }
+
+  try {
+    const result = await api.runDefamationCheck(state.currentProject.id);
+    state.defamation = await api.getDefamation(state.currentProject.id);
+    renderDefamation();
+    showToast(`Defamation check complete: ${result.critical} critical, ${result.warnings} warnings`);
+  } catch(e) {
+    showToast('Defamation check failed', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = `[${t('run_check')}]`; }
+  }
+}
+
+// =========================================================================
+// Scan (with model selection)
+// =========================================================================
+async function openScanModal() {
+  if (!state.currentProject) return;
+  // Load models if not cached
+  if (!state.availableModels.length) {
+    try { state.availableModels = await api.getModels(); } catch(e) { state.availableModels = []; }
+  }
+  // Load saved selection from localStorage (per project)
+  const savedKey = `qb_models_${state.currentProject.id}`;
+  const saved = localStorage.getItem(savedKey);
+  if (saved) {
+    try { state.selectedModelIds = JSON.parse(saved); } catch(e) { state.selectedModelIds = []; }
+  }
+  // Default: first 3
+  if (!state.selectedModelIds.length) {
+    state.selectedModelIds = state.availableModels.slice(0, 3).map(m => m.id);
+  }
+  renderScanModal();
+  document.getElementById('scan-cancel-btn').textContent = `[${t('cancel')}]`;
+  document.getElementById('scan-start-btn').textContent = `[${t('start_scan')}]`;
+  document.getElementById('modal-scan').classList.add('open');
+}
+
+function renderScanModal() {
+  const c = document.getElementById('scan-model-list');
+  if (!c) return;
+  // Update modal title and sub text
+  const scanModal = document.getElementById('modal-scan');
+  if (scanModal) {
+    scanModal.querySelector('.modal-title').textContent = `[${t('select_models')}]`;
+    scanModal.querySelector('.modal-title + div').textContent = `// ${t('select_models_sub')}`;
+  }
+  c.innerHTML = state.availableModels.map(m => {
+    const checked = state.selectedModelIds.includes(m.id);
+    return `
+      <div class="scan-model-item" onclick="toggleScanModelClick('${escapeHtml(m.id)}', this)">
+        <span class="scan-checkbox ${checked ? '' : 'unchecked'}">${checked ? '[x]' : '[ ]'}</span>
+        <span style="flex:1">${escapeHtml(m.name)}</span>
+        <span style="font-size:0.64rem;color:var(--muted)">${escapeHtml(m.provider)}</span>
+      </div>`;
+  }).join('');
+}
+
+function toggleScanModelClick(id, el) {
+  const idx = state.selectedModelIds.indexOf(id);
+  if (idx >= 0) {
+    state.selectedModelIds.splice(idx, 1);
+  } else {
+    state.selectedModelIds.push(id);
+  }
+  renderScanModal();
+}
+
+function toggleScanModel(id, checked) {
+  if (checked) {
+    if (!state.selectedModelIds.includes(id)) state.selectedModelIds.push(id);
+  } else {
+    state.selectedModelIds = state.selectedModelIds.filter(x => x !== id);
+  }
+}
+
+// Alias for backward compat with Scan button
+function runScan() { openScanModal(); }
+
+async function startScan() {
+  if (!state.currentProject) return;
+  if (!state.selectedModelIds.length) { showToast('Select at least one model', 'error'); return; }
+
+  // Save selection per project
+  const savedKey = `qb_models_${state.currentProject.id}`;
+  localStorage.setItem(savedKey, JSON.stringify(state.selectedModelIds));
+
+  closeModal('modal-scan');
+
+  const btn = document.getElementById('scan-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = `<div class="spinner" style="width:14px;height:14px;margin:0;border-width:2px;display:inline-block"></div> ${t('scanning')}`; }
+
+  try {
+    const result = await api.scanProject(state.currentProject.id, state.selectedModelIds);
+    showToast(`Scan complete: ${result.mentions_found}/${result.total_checks} mentions (${result.mention_rate_pct}%)`);
+    await loadTab(state.activeTab);
+  } catch(e) {
+    showToast('Scan failed', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = `[${t('scan')}]`; }
+  }
+}
+
+// =========================================================================
+// Modals
+// =========================================================================
+function openNewProjectModal() {
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-category').value = '';
+  document.getElementById('np-url').value = '';
+  document.getElementById('np-competitors').value = '';
+  document.getElementById('np-queries').value = '';
+  // Localize modal
+  document.getElementById('np-modal-title').textContent = `[${t('new_project_title')}]`;
+  document.getElementById('np-label-name').textContent = t('product_name');
+  document.getElementById('np-label-category').textContent = t('category');
+  document.getElementById('np-label-url').textContent = t('website_url');
+  document.getElementById('np-label-competitors').textContent = t('competitors');
+  document.getElementById('np-label-queries').textContent = t('search_queries');
+  document.getElementById('np-cancel-btn').textContent = `[${t('cancel')}]`;
+  document.getElementById('np-submit').textContent = `[${t('create')}]`;
+  document.getElementById('modal-new-project').classList.add('open');
+}
+
+function openEditProjectModal() {
+  if (!state.currentProject) return;
+  const p = state.currentProject;
+  document.getElementById('ep-name').value = p.name;
+  document.getElementById('ep-category').value = p.category;
+  document.getElementById('ep-url').value = p.url || '';
+  document.getElementById('ep-competitors').value = (p.competitors || []).join(', ');
+  document.getElementById('ep-queries').value = (p.queries || []).join('\n');
+  // Localize modal
+  document.getElementById('ep-modal-title').textContent = `[${t('project_settings')}]`;
+  document.getElementById('ep-label-name').textContent = t('product_name');
+  document.getElementById('ep-label-category').textContent = t('category');
+  document.getElementById('ep-label-url').textContent = t('website_url');
+  document.getElementById('ep-label-competitors').textContent = t('competitors');
+  document.getElementById('ep-label-queries').textContent = t('search_queries');
+  document.getElementById('ep-delete-btn').textContent = `[${t('delete')}]`;
+  document.getElementById('ep-cancel-btn').textContent = `[${t('cancel')}]`;
+  document.getElementById('ep-save-btn').textContent = `[${t('save')}]`;
+  document.getElementById('modal-edit-project').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => {
+    if (e.target === el) el.classList.remove('open');
+  });
+});
+
+async function createProject() {
+  const name = document.getElementById('np-name').value.trim();
+  const category = document.getElementById('np-category').value.trim();
+  if (!name || !category) { showToast('Name and category are required', 'error'); return; }
+
+  const url = document.getElementById('np-url').value.trim() || null;
+  const competitors = document.getElementById('np-competitors').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const queriesRaw = document.getElementById('np-queries').value.trim();
+  const queries = queriesRaw ? queriesRaw.split('\n').map(s=>s.trim()).filter(Boolean) : [];
+
+  const btn = document.getElementById('np-submit');
+  btn.disabled = true;
+
+  try {
+    const p = await api.createProject({name, category, url, competitors, queries});
+    closeModal('modal-new-project');
+    showToast(`Project "${name}" created with ${p.queries.length} queries`);
+    await loadAllProjects();
+    await selectProject(p.id);
+  } catch(e) {
+    showToast('Failed to create project', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function saveProject() {
+  if (!state.currentProject) return;
+  const name = document.getElementById('ep-name').value.trim();
+  const category = document.getElementById('ep-category').value.trim();
+  if (!name || !category) { showToast('Name and category are required', 'error'); return; }
+
+  const url = document.getElementById('ep-url').value.trim() || null;
+  const competitors = document.getElementById('ep-competitors').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const queries = document.getElementById('ep-queries').value.trim().split('\n').map(s=>s.trim()).filter(Boolean);
+
+  try {
+    await api.updateProject(state.currentProject.id, {name, category, url, competitors, queries});
+    closeModal('modal-edit-project');
+    showToast('Project updated');
+    await loadAllProjects();
+    state.currentProject = state.projects.find(p => p.id === state.currentProject.id);
+    renderTopbar();
+    await loadTab(state.activeTab);
+  } catch(e) {
+    showToast('Failed to update project', 'error');
+  }
+}
+
+async function deleteCurrentProject() {
+  if (!state.currentProject) return;
+  if (!confirm(`Delete "${state.currentProject.name}"? This cannot be undone.`)) return;
+
+  try {
+    await api.deleteProject(state.currentProject.id);
+    closeModal('modal-edit-project');
+    showToast('Project deleted');
+    state.currentProject = null;
+    await loadAllProjects();
+    renderTopbar();
+    renderTabs();
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&gt;_</div>
+        <div class="empty-state-title">[QUOTED_BY]</div>
+        <div class="empty-state-desc">${t('select_create')}</div>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="openNewProjectModal()">+ ${t('create_project')}</button>
+      </div>`;
+  } catch(e) {
+    showToast('Failed to delete project', 'error');
+  }
+}
+
+// =========================================================================
+// Init
+// =========================================================================
+async function loadAllProjects() {
+  try {
+    state.projects = await api.getProjects();
+  } catch(e) {
+    state.projects = [];
+  }
+  renderSidebar();
+}
+
+function render() {
+  renderSidebar();
+  renderTopbar();
+  renderTabs();
+  // Re-render current tab content if project is selected
+  if (state.currentProject) {
+    switch(state.activeTab) {
+      case 'dashboard': if (state.dashboard) renderDashboard(); break;
+      case 'scans': if (state.scans) renderScans(); break;
+      case 'trends': if (state.trends) renderTrends(); break;
+      case 'defamation': if (state.defamation) renderDefamation(); break;
+    }
+  } else {
+    // Re-render welcome screen
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&gt;_</div>
+        <div class="empty-state-title">[${t('welcome')}]</div>
+        <div class="empty-state-desc">${t('welcome_sub')}</div>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="openNewProjectModal()">
+          + ${t('create_project')}
+        </button>
+      </div>`;
+  }
+}
+
+async function init() {
+  await loadAllProjects();
+  renderTopbar();
+  renderTabs();
+
+  // Auto-select first project if exists
+  if (state.projects.length) {
+    await selectProject(state.projects[0].id);
+  } else {
+    render();
+  }
+}
+
+init();
+
+// Redraw chart on resize
+window.addEventListener('resize', () => {
+  if (state.activeTab === 'trends' && state.trends.length) {
+    requestAnimationFrame(() => drawTrendChart());
+  }
+});
+</script>
+</body>
+</html>

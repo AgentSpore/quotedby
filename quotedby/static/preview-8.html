@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Soft Pastel</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #F0ECFE;
+    color: #3d3654;
+    padding: 24px;
+  }
+
+  .container {
+    max-width: 1060px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .logo {
+    font-size: 26px;
+    font-weight: 700;
+    color: #6c5ce7;
+  }
+
+  .logo span {
+    font-weight: 400;
+    color: #a29bfe;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .project-pill {
+    background: #fff;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6c5ce7;
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1);
+  }
+
+  .scan-time {
+    font-size: 13px;
+    color: #a29bfe;
+  }
+
+  /* Score Badge */
+  .score-section {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .score-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    height: 160px;
+    background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+    border-radius: 50%;
+    box-shadow: 0 8px 32px rgba(108, 92, 231, 0.3);
+    margin-bottom: 12px;
+  }
+
+  .score-badge .number {
+    font-size: 52px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .score-badge .pct {
+    font-size: 18px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+  }
+
+  .score-subtitle {
+    font-size: 15px;
+    color: #a29bfe;
+    font-weight: 500;
+  }
+
+  /* Cards */
+  .cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .card-pink { background: #ffeef4; }
+  .card-mint { background: #edfff5; }
+  .card-peach { background: #fff3eb; }
+  .card-lavender { background: #f0ecfe; border: 2px solid #e0d9fd; }
+  .card-white { background: #fff; }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    color: #6c5ce7;
+  }
+
+  /* Model cards */
+  .model-card {
+    text-align: center;
+    padding: 20px 16px;
+  }
+
+  .model-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .icon-pink { background: #ffd6e7; color: #d63384; }
+  .icon-mint { background: #c3f5d5; color: #198754; }
+  .icon-peach { background: #ffd6b3; color: #d96c00; }
+
+  .model-card .name {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .model-card .status {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .status-yes { color: #0ca678; }
+  .status-no { color: #ccc; }
+
+  .model-card .pos {
+    font-size: 13px;
+    color: #a29bfe;
+  }
+
+  /* Bottom row */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* Competitors */
+  .comp-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .comp-item:last-child { margin-bottom: 0; }
+
+  .comp-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .avatar-purple { background: #a29bfe; }
+  .avatar-teal { background: #0ca678; }
+  .avatar-pink { background: #e75480; }
+
+  .comp-info { flex: 1; }
+
+  .comp-name {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .comp-bar-track {
+    height: 8px;
+    background: rgba(108, 92, 231, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .comp-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #a29bfe, #6c5ce7);
+  }
+
+  .comp-bar-fill.you {
+    background: linear-gradient(90deg, #55efc4, #0ca678);
+  }
+
+  .comp-pct {
+    font-size: 16px;
+    font-weight: 700;
+    color: #6c5ce7;
+    width: 44px;
+    text-align: right;
+  }
+
+  /* Alerts */
+  .alert-bubble {
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+
+  .alert-bubble:last-child { margin-bottom: 0; }
+
+  .alert-crit {
+    background: #ffeef4;
+    border: 2px solid #ffcce0;
+  }
+
+  .alert-warn {
+    background: #fff8eb;
+    border: 2px solid #ffe8b8;
+  }
+
+  .alert-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .alert-crit .alert-label { color: #d63384; }
+  .alert-warn .alert-label { color: #d97706; }
+
+  .alert-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #3d3654;
+  }
+
+  @media (max-width: 640px) {
+    .cards-row, .bottom-row {
+      grid-template-columns: 1fr;
+    }
+    header { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .score-badge { width: 130px; height: 130px; }
+    .score-badge .number { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">Quoted<span>By</span></div>
+    <div class="header-right">
+      <div class="scan-time">Last scan: Apr 1, 2026</div>
+      <div class="project-pill">PodMemory</div>
+    </div>
+  </header>
+
+  <div class="score-section">
+    <div class="score-badge">
+      <div class="number">42</div>
+      <div class="pct">percent</div>
+    </div>
+    <div class="score-subtitle">Your Visibility Score across 3 AI models</div>
+  </div>
+
+  <div class="cards-row">
+    <div class="card card-pink model-card">
+      <div class="model-icon icon-pink">Q</div>
+      <div class="name">Qwen 3</div>
+      <div class="status status-yes">Mentioned</div>
+      <div class="pos">Position #3</div>
+    </div>
+    <div class="card card-mint model-card">
+      <div class="model-icon icon-mint">G</div>
+      <div class="name">Gemini Flash</div>
+      <div class="status status-no">Not Mentioned</div>
+      <div class="pos">&mdash;</div>
+    </div>
+    <div class="card card-peach model-card">
+      <div class="model-icon icon-peach">N</div>
+      <div class="name">Nemotron</div>
+      <div class="status status-yes">Mentioned</div>
+      <div class="pos">Position #7</div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <div class="card card-white">
+      <div class="card-title">Competitors</div>
+      <div class="comp-item">
+        <div class="comp-avatar avatar-purple">N</div>
+        <div class="comp-info">
+          <div class="comp-name">Notion AI</div>
+          <div class="comp-bar-track"><div class="comp-bar-fill" style="width:65%"></div></div>
+        </div>
+        <div class="comp-pct">65%</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-avatar avatar-teal">P</div>
+        <div class="comp-info">
+          <div class="comp-name">PodMemory (you)</div>
+          <div class="comp-bar-track"><div class="comp-bar-fill you" style="width:42%"></div></div>
+        </div>
+        <div class="comp-pct">42%</div>
+      </div>
+      <div class="comp-item">
+        <div class="comp-avatar avatar-pink">M</div>
+        <div class="comp-info">
+          <div class="comp-name">Mem.ai</div>
+          <div class="comp-bar-track"><div class="comp-bar-fill" style="width:38%"></div></div>
+        </div>
+        <div class="comp-pct">38%</div>
+      </div>
+    </div>
+
+    <div class="card card-white">
+      <div class="card-title">Alerts</div>
+      <div class="alert-bubble alert-crit">
+        <div class="alert-label">Critical</div>
+        <div class="alert-text">"PodMemory was discontinued" &mdash; found in Qwen 3</div>
+      </div>
+      <div class="alert-bubble alert-warn">
+        <div class="alert-label">Warning</div>
+        <div class="alert-text">"PodMemory has privacy issues" &mdash; found in Nemotron</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

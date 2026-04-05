@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Aurora Gradient</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 25%, #3b82f6 50%, #06b6d4 75%, #14b8a6 100%);
+    background-attachment: fixed;
+    color: #1e1b4b;
+    padding: 24px;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(99, 102, 241, 0.5);
+  }
+
+  .logo span { font-weight: 300; opacity: 0.8; }
+
+  .project-badge {
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 40px;
+    padding: 8px 20px;
+    color: #fff;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #6366f1;
+    margin-bottom: 20px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* Score Ring */
+  .score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .score-ring {
+    width: 180px;
+    height: 180px;
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .score-ring .bg {
+    fill: none;
+    stroke: rgba(99, 102, 241, 0.15);
+    stroke-width: 10;
+  }
+
+  .score-ring .progress {
+    fill: none;
+    stroke: url(#scoreGradient);
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 452;
+    stroke-dashoffset: 262;
+    filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.5));
+  }
+
+  .score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: 700;
+    color: #4f46e5;
+  }
+
+  .score-value span { font-size: 24px; font-weight: 400; }
+  .score-label { font-size: 16px; color: #6b7280; font-weight: 400; }
+
+  /* Models */
+  .model-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+  }
+
+  .model-row:last-child { border-bottom: none; }
+
+  .model-info { flex: 1; }
+  .model-name { font-weight: 600; font-size: 16px; }
+  .model-detail { font-size: 14px; color: #6b7280; margin-top: 2px; }
+
+  .badge-mentioned {
+    background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+    color: #4c1d95;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .badge-not {
+    background: rgba(0,0,0,0.06);
+    color: #9ca3af;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* Competitors */
+  .competitor-row {
+    margin-bottom: 16px;
+  }
+
+  .competitor-row:last-child { margin-bottom: 0; }
+
+  .competitor-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .competitor-bar-bg {
+    height: 10px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .competitor-bar {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #a78bfa, #6366f1);
+  }
+
+  .competitor-bar.you {
+    background: linear-gradient(90deg, #06b6d4, #14b8a6);
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  .alert:last-child { margin-bottom: 0; }
+
+  .alert-critical {
+    background: rgba(239, 68, 68, 0.12);
+    border-left: 4px solid #ef4444;
+  }
+
+  .alert-warning {
+    background: rgba(245, 158, 11, 0.12);
+    border-left: 4px solid #f59e0b;
+  }
+
+  .alert-tag {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .alert-critical .alert-tag { color: #ef4444; }
+  .alert-warning .alert-tag { color: #d97706; }
+  .alert-text { font-size: 15px; color: #374151; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .grid, .two-col {
+      grid-template-columns: 1fr;
+    }
+    header { flex-direction: column; gap: 12px; }
+    body { padding: 16px; }
+    .score-ring { width: 140px; height: 140px; }
+    .score-value { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">Quoted<span>By</span></div>
+    <div class="project-badge">Tracking: PodMemory</div>
+  </header>
+
+  <div class="grid" style="margin-bottom:20px;">
+    <div class="card score-section" style="grid-column: span 1;">
+      <h2>Visibility Score</h2>
+      <div class="score-ring">
+        <svg viewBox="0 0 160 160">
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#a78bfa"/>
+              <stop offset="100%" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          <circle class="bg" cx="80" cy="80" r="72"/>
+          <circle class="progress" cx="80" cy="80" r="72"/>
+        </svg>
+        <div class="score-value">42<span>%</span></div>
+      </div>
+      <div class="score-label">Across 3 AI models</div>
+    </div>
+
+    <div class="card" style="grid-column: span 2;">
+      <h2>Model Breakdown</h2>
+      <div class="model-row">
+        <div class="model-info">
+          <div class="model-name">Qwen 3</div>
+          <div class="model-detail">Position #3 in response</div>
+        </div>
+        <div class="badge-mentioned">Mentioned</div>
+      </div>
+      <div class="model-row">
+        <div class="model-info">
+          <div class="model-name">Gemini Flash</div>
+          <div class="model-detail">Not found in responses</div>
+        </div>
+        <div class="badge-not">Not Mentioned</div>
+      </div>
+      <div class="model-row">
+        <div class="model-info">
+          <div class="model-name">Nemotron</div>
+          <div class="model-detail">Position #7 in response</div>
+        </div>
+        <div class="badge-mentioned">Mentioned</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>Competitor Comparison</h2>
+      <div class="competitor-row">
+        <div class="competitor-header">
+          <span>Notion AI</span><span>65%</span>
+        </div>
+        <div class="competitor-bar-bg">
+          <div class="competitor-bar" style="width:65%"></div>
+        </div>
+      </div>
+      <div class="competitor-row">
+        <div class="competitor-header">
+          <span>PodMemory (you)</span><span>42%</span>
+        </div>
+        <div class="competitor-bar-bg">
+          <div class="competitor-bar you" style="width:42%"></div>
+        </div>
+      </div>
+      <div class="competitor-row">
+        <div class="competitor-header">
+          <span>Mem.ai</span><span>38%</span>
+        </div>
+        <div class="competitor-bar-bg">
+          <div class="competitor-bar" style="width:38%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Defamation Alerts</h2>
+      <div class="alert alert-critical">
+        <div class="alert-tag">Critical</div>
+        <div class="alert-text">"PodMemory was discontinued" — detected in Qwen 3 responses</div>
+      </div>
+      <div class="alert alert-warning">
+        <div class="alert-tag">Warning</div>
+        <div class="alert-text">"PodMemory has privacy issues" — detected in Nemotron responses</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Cyberpunk Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #0A0E1A;
+    color: #e0e0e0;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Hexagonal background pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(57, 255, 20, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(255, 107, 0, 0.03) 0%, transparent 50%);
+    background-size: 80px 80px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    margin-bottom: 28px;
+    border-bottom: 2px solid #39FF14;
+  }
+
+  .logo {
+    font-size: 32px;
+    font-weight: 700;
+    color: #39FF14;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    position: relative;
+    /* Glitch effect */
+    text-shadow:
+      2px 0 #FF6B00,
+      -2px 0 #39FF14;
+    animation: glitch 3s infinite;
+  }
+
+  @keyframes glitch {
+    0%, 92%, 100% { text-shadow: 2px 0 transparent, -2px 0 transparent; }
+    93% { text-shadow: 2px 2px #FF6B00, -2px -1px #39FF14; }
+    95% { text-shadow: -2px 0 #FF6B00, 2px 1px #39FF14; }
+    97% { text-shadow: 2px -1px #FF6B00, -1px 2px #39FF14; }
+  }
+
+  .project-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #FF6B00;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+  }
+
+  .panel {
+    background: rgba(15, 20, 40, 0.9);
+    border: 1px solid rgba(57, 255, 20, 0.2);
+    border-radius: 2px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #39FF14, transparent);
+  }
+
+  .panel-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #39FF14;
+    margin-bottom: 20px;
+  }
+
+  /* SVG Gauge */
+  .gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    grid-row: span 2;
+  }
+
+  .gauge-svg {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 16px;
+  }
+
+  .gauge-bg {
+    fill: none;
+    stroke: rgba(57, 255, 20, 0.1);
+    stroke-width: 12;
+  }
+
+  .gauge-arc {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke: url(#gaugeGrad);
+    stroke-dasharray: 452;
+    stroke-dashoffset: 262;
+    filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.5));
+  }
+
+  .gauge-text {
+    font-family: 'Rajdhani', sans-serif;
+    fill: #39FF14;
+    font-size: 52px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: central;
+    filter: drop-shadow(0 0 10px rgba(57, 255, 20, 0.6));
+  }
+
+  .gauge-sub {
+    font-family: 'Rajdhani', sans-serif;
+    fill: #FF6B00;
+    font-size: 14px;
+    font-weight: 600;
+    text-anchor: middle;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+  }
+
+  .gauge-stats {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+  }
+
+  .gauge-stats span { color: #39FF14; font-weight: 700; }
+
+  /* Models */
+  .model-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(57, 255, 20, 0.08);
+  }
+
+  .model-row:last-child { border-bottom: none; }
+
+  .model-name {
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .model-pos {
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+  }
+
+  .tag-active {
+    background: rgba(57, 255, 20, 0.15);
+    color: #39FF14;
+    border: 1px solid rgba(57, 255, 20, 0.3);
+    padding: 3px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .tag-inactive {
+    background: rgba(255,255,255,0.03);
+    color: #555;
+    border: 1px solid #333;
+    padding: 3px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Competitors */
+  .comp-entry {
+    margin-bottom: 16px;
+  }
+
+  .comp-entry:last-child { margin-bottom: 0; }
+
+  .comp-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 15px;
+  }
+
+  .comp-meta .val {
+    color: #FF6B00;
+    font-weight: 700;
+  }
+
+  .comp-track {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .comp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #39FF14, #FF6B00);
+    box-shadow: 0 0 6px rgba(57, 255, 20, 0.4);
+  }
+
+  .comp-fill.you {
+    background: linear-gradient(90deg, #FF6B00, #ff4400);
+    box-shadow: 0 0 6px rgba(255, 107, 0, 0.4);
+  }
+
+  /* Alerts */
+  .alert-box {
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border-left: 3px solid;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .alert-box:last-child { margin-bottom: 0; }
+
+  .alert-critical { border-color: #ff2040; }
+  .alert-warning { border-color: #FF6B00; }
+
+  .alert-type {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .alert-critical .alert-type { color: #ff2040; }
+  .alert-warning .alert-type { color: #FF6B00; }
+
+  .alert-content {
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+  }
+
+  .full-width { grid-column: 2 / -1; }
+
+  .bottom-bar {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(57, 255, 20, 0.3);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    .gauge-container { grid-row: span 1; }
+    .full-width { grid-column: 1; }
+    .logo { font-size: 24px; letter-spacing: 2px; }
+    header { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">QuotedBy</div>
+    <div class="project-name">// PodMemory //</div>
+  </header>
+
+  <div class="dashboard-grid">
+    <!-- Gauge -->
+    <div class="panel gauge-container">
+      <div class="panel-label">Visibility Index</div>
+      <svg class="gauge-svg" viewBox="0 0 160 160">
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#39FF14"/>
+            <stop offset="100%" stop-color="#FF6B00"/>
+          </linearGradient>
+        </defs>
+        <circle class="gauge-bg" cx="80" cy="80" r="72" transform="rotate(-90 80 80)"/>
+        <circle class="gauge-arc" cx="80" cy="80" r="72" transform="rotate(-90 80 80)"/>
+        <text class="gauge-text" x="80" y="74">42%</text>
+        <text class="gauge-sub" x="80" y="102">SCORE</text>
+      </svg>
+      <div class="gauge-stats">
+        <span>2</span> / 3 models citing<br>
+        Last scan: <span>09:42 UTC</span>
+      </div>
+    </div>
+
+    <!-- Models -->
+    <div class="panel full-width">
+      <div class="panel-label">Model Scan Matrix</div>
+      <div class="model-row">
+        <div>
+          <div class="model-name">Qwen 3</div>
+          <div class="model-pos">Rank Position: #3</div>
+        </div>
+        <div class="tag-active">Detected</div>
+      </div>
+      <div class="model-row">
+        <div>
+          <div class="model-name">Gemini Flash</div>
+          <div class="model-pos">No citation found</div>
+        </div>
+        <div class="tag-inactive">Absent</div>
+      </div>
+      <div class="model-row">
+        <div>
+          <div class="model-name">Nemotron</div>
+          <div class="model-pos">Rank Position: #7</div>
+        </div>
+        <div class="tag-active">Detected</div>
+      </div>
+    </div>
+
+    <!-- Competitors -->
+    <div class="panel">
+      <div class="panel-label">Competitor Intel</div>
+      <div class="comp-entry">
+        <div class="comp-meta"><span>Notion AI</span><span class="val">65%</span></div>
+        <div class="comp-track"><div class="comp-fill" style="width:65%"></div></div>
+      </div>
+      <div class="comp-entry">
+        <div class="comp-meta"><span>PodMemory</span><span class="val">42%</span></div>
+        <div class="comp-track"><div class="comp-fill you" style="width:42%"></div></div>
+      </div>
+      <div class="comp-entry">
+        <div class="comp-meta"><span>Mem.ai</span><span class="val">38%</span></div>
+        <div class="comp-track"><div class="comp-fill" style="width:38%"></div></div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="panel">
+      <div class="panel-label">Threat Alerts</div>
+      <div class="alert-box alert-critical">
+        <div class="alert-type">Critical Threat</div>
+        <div class="alert-content">"PodMemory was discontinued" &mdash; Qwen 3</div>
+      </div>
+      <div class="alert-box alert-warning">
+        <div class="alert-type">Warning</div>
+        <div class="alert-content">"PodMemory has privacy issues" &mdash; Nemotron</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">QuotedBy // Cyberpunk Intelligence Layer // v2.1.0</div>
+</div>
+</body>
+</html>

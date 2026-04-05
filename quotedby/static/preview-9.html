@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuotedBy — Swiss Minimal</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    background: #ffffff;
+    color: #000000;
+    padding: 48px 40px;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+  }
+
+  .header-meta {
+    font-size: 13px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #000;
+    margin: 0;
+  }
+
+  hr.thick {
+    border-top-width: 3px;
+  }
+
+  /* Main Layout — asymmetric */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 48px;
+    margin-bottom: 48px;
+  }
+
+  /* Big Score */
+  .score-panel {
+    position: sticky;
+    top: 48px;
+  }
+
+  .score-number {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 120px;
+    line-height: 0.9;
+    color: #000;
+    margin-bottom: 8px;
+  }
+
+  .score-pct {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 48px;
+    color: #FF0000;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .score-desc {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+  }
+
+  .score-desc strong {
+    color: #000;
+  }
+
+  /* Right content */
+  .right-content section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+    padding-top: 16px;
+  }
+
+  /* Models */
+  .model-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .model-row:first-of-type {
+    border-top: 1px solid #e5e5e5;
+  }
+
+  .model-name {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .model-detail {
+    font-size: 14px;
+    color: #999;
+  }
+
+  .status-mentioned {
+    color: #FF0000;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .status-absent {
+    color: #ccc;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Competitors */
+  .comp-row {
+    display: flex;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .comp-row:first-of-type {
+    border-top: 1px solid #e5e5e5;
+  }
+
+  .comp-name {
+    width: 160px;
+    font-size: 16px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .comp-bar-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .comp-bar-track {
+    flex: 1;
+    height: 3px;
+    background: #e5e5e5;
+  }
+
+  .comp-bar-fill {
+    height: 100%;
+    background: #000;
+  }
+
+  .comp-bar-fill.red { background: #FF0000; }
+
+  .comp-val {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 20px;
+    width: 56px;
+    text-align: right;
+  }
+
+  .comp-val.red { color: #FF0000; }
+
+  /* Alerts */
+  .alert-item {
+    padding: 16px 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  .alert-item:first-of-type {
+    border-top: 1px solid #e5e5e5;
+  }
+
+  .alert-level {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .alert-level.crit { color: #FF0000; }
+  .alert-level.warn { color: #000; }
+
+  .alert-text {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .alert-source {
+    font-size: 13px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  /* Footer */
+  .footer {
+    padding-top: 16px;
+    font-size: 12px;
+    color: #ccc;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-align: right;
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 24px 20px; }
+    .main-layout {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .score-number { font-size: 80px; }
+    .score-pct { font-size: 32px; }
+    .score-panel { position: static; }
+    header { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">QuotedBy</div>
+    <div class="header-meta">PodMemory &mdash; April 2026</div>
+  </header>
+  <hr class="thick">
+
+  <div class="main-layout">
+    <div class="score-panel">
+      <div class="score-number">42</div>
+      <div class="score-pct">%</div>
+      <div class="score-desc">
+        <strong>Visibility Score</strong><br>
+        Your product is mentioned in 2 out of 3 AI models scanned. This places you in the moderate visibility range.
+      </div>
+    </div>
+
+    <div class="right-content">
+      <section>
+        <div class="section-title">Models</div>
+        <div class="model-row">
+          <div>
+            <div class="model-name">Qwen 3</div>
+            <div class="model-detail">Position #3</div>
+          </div>
+          <div class="status-mentioned">Mentioned</div>
+        </div>
+        <div class="model-row">
+          <div>
+            <div class="model-name">Gemini Flash</div>
+            <div class="model-detail">Not found</div>
+          </div>
+          <div class="status-absent">Absent</div>
+        </div>
+        <div class="model-row">
+          <div>
+            <div class="model-name">Nemotron</div>
+            <div class="model-detail">Position #7</div>
+          </div>
+          <div class="status-mentioned">Mentioned</div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">Competitors</div>
+        <div class="comp-row">
+          <div class="comp-name">Notion AI</div>
+          <div class="comp-bar-area">
+            <div class="comp-bar-track"><div class="comp-bar-fill" style="width:65%"></div></div>
+            <div class="comp-val">65%</div>
+          </div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-name">PodMemory</div>
+          <div class="comp-bar-area">
+            <div class="comp-bar-track"><div class="comp-bar-fill red" style="width:42%"></div></div>
+            <div class="comp-val red">42%</div>
+          </div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-name">Mem.ai</div>
+          <div class="comp-bar-area">
+            <div class="comp-bar-track"><div class="comp-bar-fill" style="width:38%"></div></div>
+            <div class="comp-val">38%</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">Alerts</div>
+        <div class="alert-item">
+          <div class="alert-level crit">Critical</div>
+          <div class="alert-text">"PodMemory was discontinued"</div>
+          <div class="alert-source">Detected in Qwen 3 responses</div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-level warn">Warning</div>
+          <div class="alert-text">"PodMemory has privacy issues"</div>
+          <div class="alert-source">Detected in Nemotron responses</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <hr>
+  <div class="footer">QuotedBy &mdash; AI Citation Intelligence</div>
+</div>
+</body>
+</html>
